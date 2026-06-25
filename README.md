@@ -1,5 +1,12 @@
 # abdullahkaragoz.dev — PortfolioOS
 
+[![Lisans: MIT](https://img.shields.io/badge/Lisans-MIT-blue.svg)](LICENSE)
+[![Canlı Demo](https://img.shields.io/badge/Canl%C4%B1_Demo-abdullahkaragoz.dev-2dd4bf?logo=googlechrome&logoColor=white)](https://abdullahkaragoz.dev)
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?logo=css3&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black)
+![Son commit](https://img.shields.io/github/last-commit/abdullahkaragoz/abdullahkaragoz.dev)
+
 Bir özgeçmiş sayfası yerine, tarayıcıda açılan küçük bir **masaüstü işletim sistemi** gibi tasarlanmış kişisel portföy. Menü çubuğu, dock ve sürüklenip boyutlandırılabilen pencerelerle gerçek bir masaüstü deneyimi sunar.
 
 🔗 Canlı: **https://abdullahkaragoz.dev**
