@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mayın Tarlası</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: #008080; /* klasik Windows masaüstü turkuazı */
+    font-family: Tahoma, "MS Sans Serif", "Segoe UI", sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    padding: 14px; overflow: auto;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    --cs: 24px;
+  }
+  @media (max-width: 560px) { body { --cs: 30px; padding: 8px; } }
+  /* 3B beveller (Win95) */
+  .raise { border: 3px solid; border-color: #ffffff #808080 #808080 #ffffff; }
+  .sink  { border: 3px solid; border-color: #808080 #ffffff #ffffff #808080; }
+
+  #app { background: #c0c0c0; }
+  #app.raise { border-width: 3px; }
+
+  /* Menü çubuğu */
+  #menubar {
+    display: flex; align-items: center; gap: 2px;
+    padding: 1px 2px; font-size: 12px; color: #000;
+    border-bottom: 1px solid #c0c0c0;
+  }
+  .mtrig { padding: 2px 7px; cursor: default; }
+  .mtrig:hover, .mtrig.open { background: #000080; color: #fff; }
+  .flagtog { margin-left: auto; display: flex; align-items: center; gap: 5px; }
+  .flagtog svg { display: block; }
+  .flagtog.on { background: #000080; color: #fff; }
+  .dropdown {
+    position: fixed; z-index: 50; min-width: 168px;
+    background: #c0c0c0; border: 2px solid; border-color: #ffffff #808080 #808080 #ffffff;
+    padding: 2px; font-size: 12px; box-shadow: 2px 2px 5px rgba(0,0,0,.4);
+  }
+  .dropdown.hidden { display: none; }
+  .mi { display: flex; align-items: center; gap: 8px; padding: 4px 18px 4px 22px; position: relative; cursor: default; white-space: nowrap; }
+  .mi:hover { background: #000080; color: #fff; }
+  .mi .chk { position: absolute; left: 7px; width: 10px; }
+  .msep { height: 0; border-top: 1px solid #808080; border-bottom: 1px solid #fff; margin: 3px 2px; }
+
+  #wrap { padding: 6px; }
+
+  /* Üst panel: sayaç + yüz + sayaç */
+  #panel {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 5px 6px; margin-bottom: 6px;
+  }
+  .led { background: #000; padding: 2px; line-height: 0; }
+  .led svg { display: block; }
+
+  #face {
+    width: 30px; height: 30px; background: #c0c0c0; padding: 0;
+    border: 3px solid; border-color: #ffffff #808080 #808080 #ffffff;
+    cursor: default; display: flex; align-items: center; justify-content: center;
+  }
+  #face:active, #face.press { border-color: #808080 #ffffff #ffffff #808080; }
+  #face svg { display: block; pointer-events: none; }
+
+  /* Tahta */
+  #board { display: grid; touch-action: manipulation; }
+  .cell {
+    width: var(--cs); height: var(--cs); box-sizing: border-box;
+    display: flex; align-items: center; justify-content: center;
+    font: bold 15px Tahoma, sans-serif; line-height: 1; cursor: default;
+    touch-action: manipulation;
+  }
+  .cell.covered { background: #c0c0c0; border: 3px solid; border-color: #ffffff #808080 #808080 #ffffff; }
+  .cell.press   { background: #c0c0c0; border: 1px solid #808080; border-right-color: #c0c0c0; border-bottom-color: #c0c0c0; }
+  .cell.open    { background: #c0c0c0; border: 1px solid #808080; border-right-color: #c0c0c0; border-bottom-color: #c0c0c0; }
+  .cell.mine    { background: #c0c0c0; }
+  .cell.boom    { background: #ff0000; }
+  .cell svg { display: block; pointer-events: none; }
+  .n1{color:#0000ff} .n2{color:#008000} .n3{color:#ff0000} .n4{color:#000080}
+  .n5{color:#800000} .n6{color:#008080} .n7{color:#000000} .n8{color:#808080}
+</style>
+</head>
+<body>
+  <div id="app" class="raise">
+    <div id="menubar">
+      <span class="mtrig" id="mGame">Oyun</span>
+      <span class="mtrig" id="mHelp">Yardım</span>
+      <span class="mtrig flagtog" id="flagToggle" title="Bayrak modu — açıkken tek dokunuş bayrak koyar"></span>
+    </div>
+    <div id="wrap">
+      <div id="panel" class="sink">
+        <div class="led" id="mineLed"></div>
+        <button id="face" aria-label="Yeni oyun"></button>
+        <div class="led" id="timeLed"></div>
+      </div>
+      <div id="board" class="sink"></div>
+    </div>
+  </div>
+
+  <div class="dropdown hidden" id="ddGame"></div>
+  <div class="dropdown hidden" id="ddHelp"></div>
+
+<script>
+"use strict";
+(function () {
+  // ---------- Zorluk seviyeleri ----------
+  const LEVELS = {
+    acemi:  { cols: 9,  rows: 9,  mines: 10, label: "Acemi" },
+    orta:   { cols: 16, rows: 16, mines: 40, label: "Orta" },
+    uzman:  { cols: 30, rows: 16, mines: 99, label: "Uzman" }
+  };
+
+  const G = {
+    level: "acemi",
+    cols: 9, rows: 9, mines: 10,
+    grid: [],            // hücreler
+    started: false,
+    over: false,
+    won: false,
+    flags: 0,
+    revealedCount: 0,
+    time: 0,
+    timer: null,
+    questionMarks: true  // soru işaretleri açık (klasik varsayılan)
+  };
+
+  const boardEl = document.getElementById("board");
+  const faceEl = document.getElementById("face");
+  const mineLedEl = document.getElementById("mineLed");
+  const timeLedEl = document.getElementById("timeLed");
+
+  // ---------- 7-segment LED ----------
+  const SEG = { a:[3,1,12,3], f:[1,3,3,15], b:[14,3,3,15], g:[3,18,12,3], e:[1,20,3,16], c:[14,20,3,16], d:[3,35,12,3] };
+  const DIGIT = { "0":"abcdef","1":"bc","2":"abdeg","3":"abcdg","4":"bcfg","5":"acdfg","6":"acdefg","7":"abc","8":"abcdefg","9":"abcdfg","-":"g"," ":"" };
+  function digitSVG(ch, x) {
+    const on = DIGIT[ch] || "";
+    let s = "";
+    for (const k in SEG) {
+      const r = SEG[k];
+      const col = on.indexOf(k) >= 0 ? "#ff2b2b" : "#3a0000";
+      s += '<rect x="' + (r[0] + x) + '" y="' + r[1] + '" width="' + r[2] + '" height="' + r[3] + '" fill="' + col + '"/>';
+    }
+    return s;
+  }
+  function ledHTML(v) {
+    let chars;
+    if (v < 0) { const a = Math.min(99, -v); chars = "-" + String(a).padStart(2, "0"); }
+    else { chars = String(Math.min(999, v)).padStart(3, "0"); }
+    let inner = "";
+    for (let i = 0; i < 3; i++) inner += '<g>' + digitSVG(chars[i], i * 19) + '</g>';
+    return '<svg width="' + (3 * 19 + 1) + '" height="40" viewBox="0 0 ' + (3 * 19 + 1) + ' 40">' +
+           '<rect width="100%" height="100%" fill="#000"/>' + inner + '</svg>';
+  }
+  function updateMineLed() { mineLedEl.innerHTML = ledHTML(G.mines - G.flags); }
+  function updateTimeLed() { timeLedEl.innerHTML = ledHTML(G.time); }
+
+  // ---------- Yüz (gülen surat) ----------
+  function faceSVG(state) {
+    const head = '<circle cx="13" cy="13" r="11" fill="#ffff00" stroke="#000" stroke-width="1.5"/>';
+    let f = '';
+    if (state === "dead") {
+      f = '<path d="M6 8 L10 12 M10 8 L6 12" stroke="#000" stroke-width="1.5" fill="none"/>' +
+          '<path d="M16 8 L20 12 M20 8 L16 12" stroke="#000" stroke-width="1.5" fill="none"/>' +
+          '<path d="M8 19 Q13 15 18 19" stroke="#000" stroke-width="1.5" fill="none"/>';
+    } else if (state === "win") {
+      f = '<rect x="6" y="8" width="6" height="3.4" rx="1" fill="#000"/>' +
+          '<rect x="14" y="8" width="6" height="3.4" rx="1" fill="#000"/>' +
+          '<rect x="11.5" y="8" width="3" height="1.4" fill="#000"/>' +
+          '<path d="M8 16 Q13 21 18 16" stroke="#000" stroke-width="1.5" fill="none"/>';
+    } else if (state === "surprised") {
+      f = '<circle cx="9" cy="10" r="1.6" fill="#000"/><circle cx="17" cy="10" r="1.6" fill="#000"/>' +
+          '<circle cx="13" cy="17" r="2.6" fill="none" stroke="#000" stroke-width="1.5"/>';
+    } else { // normal
+      f = '<circle cx="9" cy="10" r="1.6" fill="#000"/><circle cx="17" cy="10" r="1.6" fill="#000"/>' +
+          '<path d="M8 15 Q13 20 18 15" stroke="#000" stroke-width="1.5" fill="none"/>';
+    }
+    return '<svg width="22" height="22" viewBox="0 0 26 26">' + head + f + '</svg>';
+  }
+  function setFace(state) { faceEl.innerHTML = faceSVG(state); }
+
+  // ---------- Mayın / bayrak görselleri ----------
+  function mineSVG() {
+    return '<svg width="18" height="18" viewBox="0 0 24 24">' +
+      '<g stroke="#000" stroke-width="1.6"><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/>' +
+      '<line x1="5.5" y1="5.5" x2="18.5" y2="18.5"/><line x1="18.5" y1="5.5" x2="5.5" y2="18.5"/></g>' +
+      '<circle cx="12" cy="12" r="6" fill="#000"/><rect x="9" y="9" width="2.4" height="2.4" fill="#fff"/></svg>';
+  }
+  function flagSVG() {
+    return '<svg width="18" height="18" viewBox="0 0 24 24">' +
+      '<rect x="11" y="4" width="1.8" height="12" fill="#000"/>' +
+      '<path d="M12 4 L4.5 7 L12 10 Z" fill="#ff0000"/>' +
+      '<rect x="6" y="17" width="12" height="2.6" fill="#000"/><rect x="8" y="15" width="8" height="2.4" fill="#000"/></svg>';
+  }
+  function wrongSVG() {
+    return '<svg width="18" height="18" viewBox="0 0 24 24">' +
+      '<circle cx="12" cy="12" r="6" fill="#000"/>' +
+      '<g stroke="#ff0000" stroke-width="2"><line x1="3" y1="3" x2="21" y2="21"/><line x1="21" y1="3" x2="3" y2="21"/></g></svg>';
+  }
+
+  // ---------- Oyun kurulumu ----------
+  function newGame(level) {
+    if (level && LEVELS[level]) G.level = level;
+    const L = LEVELS[G.level];
+    G.cols = L.cols; G.rows = L.rows; G.mines = L.mines;
+    G.grid = [];
+    for (let i = 0; i < G.cols * G.rows; i++) G.grid.push({ mine: false, count: 0, revealed: false, mark: 0, boom: false });
+    G.started = false; G.over = false; G.won = false;
+    G.flags = 0; G.revealedCount = 0; G.time = 0;
+    if (G.timer) { clearInterval(G.timer); G.timer = null; }
+    setFace("normal");
+    updateMineLed(); updateTimeLed();
+    buildBoard();
+  }
+
+  function idx(r, c) { return r * G.cols + c; }
+  function inBounds(r, c) { return r >= 0 && r < G.rows && c >= 0 && c < G.cols; }
+  function neighbors(r, c) {
+    const out = [];
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      if (inBounds(r + dr, c + dc)) out.push([r + dr, c + dc]);
+    }
+    return out;
+  }
+
+  function placeMines(safeR, safeC) {
+    const forbidden = new Set();
+    forbidden.add(idx(safeR, safeC));
+    // İlk tıkta açılma olması için komşuları da boş bırak (yer varsa)
+    if (G.cols * G.rows - G.mines > 9) {
+      neighbors(safeR, safeC).forEach(([r, c]) => forbidden.add(idx(r, c)));
+    }
+    let placed = 0;
+    while (placed < G.mines) {
+      const i = Math.floor(Math.random() * G.grid.length);
+      if (forbidden.has(i) || G.grid[i].mine) continue;
+      G.grid[i].mine = true; placed++;
+    }
+    for (let r = 0; r < G.rows; r++) for (let c = 0; c < G.cols; c++) {
+      if (G.grid[idx(r, c)].mine) continue;
+      let n = 0;
+      neighbors(r, c).forEach(([nr, nc]) => { if (G.grid[idx(nr, nc)].mine) n++; });
+      G.grid[idx(r, c)].count = n;
+    }
+  }
+
+  function startTimer() {
+    G.started = true;
+    G.timer = setInterval(() => { if (G.time < 999) { G.time++; updateTimeLed(); } }, 1000);
+  }
+
+  // ---------- Tahta DOM ----------
+  function buildBoard() {
+    boardEl.style.gridTemplateColumns = "repeat(" + G.cols + ", var(--cs))";
+    boardEl.style.width = "";
+    let html = "";
+    for (let r = 0; r < G.rows; r++) for (let c = 0; c < G.cols; c++) {
+      html += '<div class="cell covered" data-r="' + r + '" data-c="' + c + '"></div>';
+    }
+    boardEl.innerHTML = html;
+  }
+  function cellEl(r, c) { return boardEl.children[idx(r, c)]; }
+
+  function renderCell(r, c) {
+    const cell = G.grid[idx(r, c)];
+    const el = cellEl(r, c);
+    el.className = "cell";
+    el.innerHTML = "";
+    if (!cell.revealed) {
+      el.classList.add("covered");
+      if (cell.mark === 1) el.innerHTML = flagSVG();
+      else if (cell.mark === 2) { el.textContent = "?"; el.style.color = "#000"; el.style.fontWeight = "bold"; }
+      return;
+    }
+    // açık
+    el.classList.add("open");
+    if (cell.mine) {
+      el.classList.add(cell.boom ? "boom" : "mine");
+      el.innerHTML = mineSVG();
+    } else if (cell.count > 0) {
+      el.classList.add("n" + cell.count);
+      el.textContent = cell.count;
+    }
+  }
+
+  function renderAll() { for (let r = 0; r < G.rows; r++) for (let c = 0; c < G.cols; c++) renderCell(r, c); }
+
+  // ---------- Oynanış ----------
+  function reveal(r, c) {
+    const start = G.grid[idx(r, c)];
+    if (start.revealed || start.mark === 1) return;
+    if (start.mine) { return loseGame(r, c); }
+    // flood fill
+    const stack = [[r, c]];
+    while (stack.length) {
+      const [cr, cc] = stack.pop();
+      const cell = G.grid[idx(cr, cc)];
+      if (cell.revealed || cell.mark === 1) continue;
+      cell.revealed = true; G.revealedCount++;
+      renderCell(cr, cc);
+      if (cell.count === 0) {
+        neighbors(cr, cc).forEach(([nr, nc]) => {
+          const nb = G.grid[idx(nr, nc)];
+          if (!nb.revealed && !nb.mine && nb.mark !== 1) stack.push([nr, nc]);
+        });
+      }
+    }
+    checkWin();
+  }
+
+  function chord(r, c) {
+    const cell = G.grid[idx(r, c)];
+    if (!cell.revealed || cell.count === 0) return;
+    let flagged = 0;
+    neighbors(r, c).forEach(([nr, nc]) => { if (G.grid[idx(nr, nc)].mark === 1) flagged++; });
+    if (flagged !== cell.count) return;
+    neighbors(r, c).forEach(([nr, nc]) => {
+      const nb = G.grid[idx(nr, nc)];
+      if (!nb.revealed && nb.mark !== 1) reveal(nr, nc);
+    });
+  }
+
+  function toggleFlag(r, c) {
+    const cell = G.grid[idx(r, c)];
+    if (cell.revealed) return;
+    if (cell.mark === 0) { cell.mark = 1; G.flags++; }
+    else if (cell.mark === 1) { cell.mark = G.questionMarks ? 2 : 0; G.flags--; }
+    else { cell.mark = 0; }
+    renderCell(r, c);
+    updateMineLed();
+  }
+
+  function loseGame(br, bc) {
+    G.over = true;
+    if (G.timer) { clearInterval(G.timer); G.timer = null; }
+    G.grid[idx(br, bc)].boom = true;
+    for (let r = 0; r < G.rows; r++) for (let c = 0; c < G.cols; c++) {
+      const cell = G.grid[idx(r, c)];
+      if (cell.mine && cell.mark !== 1) { cell.revealed = true; renderCell(r, c); }
+      else if (!cell.mine && cell.mark === 1) {
+        const el = cellEl(r, c); el.className = "cell open"; el.innerHTML = wrongSVG();
+      }
+    }
+    setFace("dead");
+  }
+
+  function checkWin() {
+    if (G.revealedCount === G.cols * G.rows - G.mines && !G.over) {
+      G.won = true; G.over = true;
+      if (G.timer) { clearInterval(G.timer); G.timer = null; }
+      // kalan mayınlara bayrak
+      for (let r = 0; r < G.rows; r++) for (let c = 0; c < G.cols; c++) {
+        const cell = G.grid[idx(r, c)];
+        if (cell.mine && cell.mark !== 1) { cell.mark = 1; G.flags++; renderCell(r, c); }
+      }
+      updateMineLed();
+      setFace("win");
+    }
+  }
+
+  // ---------- Etkileşim ----------
+  let pressed = null;
+  let flagMode = false;
+  function clearPress() { if (pressed) { pressed.classList.remove("press"); pressed = null; } }
+
+  boardEl.addEventListener("contextmenu", e => {
+    e.preventDefault();
+    if (G.over) return;
+    const t = e.target.closest(".cell"); if (!t) return;
+    toggleFlag(+t.dataset.r, +t.dataset.c);
+  });
+
+  boardEl.addEventListener("mousedown", e => {
+    if (G.over) return;
+    if (e.button === 0) {
+      setFace("surprised");
+      const t = e.target.closest(".cell");
+      if (t) {
+        const cell = G.grid[idx(+t.dataset.r, +t.dataset.c)];
+        if (!cell.revealed && cell.mark !== 1) { t.classList.add("press"); pressed = t; }
+      }
+    }
+  });
+
+  boardEl.addEventListener("mouseup", e => {
+    if (G.over) return;
+    clearPress();
+    const t = e.target.closest(".cell"); if (!t) { setFace("normal"); return; }
+    const r = +t.dataset.r, c = +t.dataset.c;
+    const cell = G.grid[idx(r, c)];
+    if (e.button === 0) {
+      if (flagMode) {
+        if (!cell.revealed) toggleFlag(r, c);
+        else if (cell.count > 0) chord(r, c);
+      } else if (cell.revealed) { chord(r, c); }
+      else if (cell.mark !== 1) {
+        if (!G.started) { placeMines(r, c); startTimer(); }
+        reveal(r, c);
+      }
+    }
+    if (!G.over) setFace("normal");
+  });
+
+  // yüz butonu
+  faceEl.addEventListener("mousedown", () => faceEl.classList.add("press"));
+  document.addEventListener("mouseup", () => { faceEl.classList.remove("press"); clearPress(); if (!G.over) setFace("normal"); });
+  faceEl.addEventListener("click", () => newGame());
+
+  // ---------- Dokunmatik (mobil) ----------
+  const flagToggle = document.getElementById("flagToggle");
+  flagToggle.innerHTML = flagSVG() + '<span>Bayrak</span>';
+  flagToggle.addEventListener("click", e => { e.stopPropagation(); flagMode = !flagMode; flagToggle.classList.toggle("on", flagMode); closeMenus(); });
+
+  let touchData = null;
+  const LONG_MS = 380, MOVE_TOL = 12;
+  boardEl.addEventListener("touchstart", e => {
+    if (G.over || e.touches.length !== 1) return;
+    const t = e.target.closest(".cell"); if (!t) return;
+    const r = +t.dataset.r, c = +t.dataset.c, cell = G.grid[idx(r, c)];
+    const tt = e.touches[0];
+    touchData = { r: r, c: c, moved: false, longFired: false, x: tt.clientX, y: tt.clientY, timer: 0 };
+    setFace("surprised");
+    if (!cell.revealed && cell.mark !== 1 && !flagMode) { t.classList.add("press"); pressed = t; }
+    touchData.timer = setTimeout(() => {
+      if (!touchData || touchData.moved) return;
+      touchData.longFired = true; clearPress();
+      if (!flagMode) { toggleFlag(r, c); if (navigator.vibrate) { try { navigator.vibrate(18); } catch (er) {} } }
+      else if (!cell.revealed && cell.mark !== 1) { if (!G.started) { placeMines(r, c); startTimer(); } reveal(r, c); }
+      if (!G.over) setFace("normal");
+    }, LONG_MS);
+  }, { passive: true });
+
+  boardEl.addEventListener("touchmove", e => {
+    if (!touchData) return;
+    const tt = e.touches[0];
+    if (Math.abs(tt.clientX - touchData.x) > MOVE_TOL || Math.abs(tt.clientY - touchData.y) > MOVE_TOL) {
+      touchData.moved = true; clearTimeout(touchData.timer); clearPress(); if (!G.over) setFace("normal");
+    }
+  }, { passive: true });
+
+  boardEl.addEventListener("touchend", e => {
+    if (!touchData) return;
+    clearTimeout(touchData.timer);
+    const td = touchData; touchData = null; clearPress();
+    if (!G.over) setFace("normal");
+    if (td.moved || td.longFired) return;
+    e.preventDefault(); // hayalet (ghost) tıklamayı engelle
+    const r = td.r, c = td.c, cell = G.grid[idx(r, c)];
+    if (flagMode) {
+      if (!cell.revealed) toggleFlag(r, c);
+      else if (cell.count > 0) chord(r, c);
+    } else if (cell.revealed) { if (cell.count > 0) chord(r, c); }
+    else if (cell.mark !== 1) {
+      if (!G.started) { placeMines(r, c); startTimer(); }
+      reveal(r, c);
+    }
+  }, { passive: false });
+
+  boardEl.addEventListener("touchcancel", () => { if (touchData) clearTimeout(touchData.timer); touchData = null; clearPress(); if (!G.over) setFace("normal"); });
+
+  // ---------- Menü ----------
+  const ddGame = document.getElementById("ddGame");
+  const ddHelp = document.getElementById("ddHelp");
+  const mGame = document.getElementById("mGame");
+  const mHelp = document.getElementById("mHelp");
+
+  function chk(on) { return '<span class="chk">' + (on ? "✓" : "") + "</span>"; }
+  function renderGameMenu() {
+    ddGame.innerHTML =
+      '<div class="mi" data-act="new"><span class="chk"></span>Yeni<span style="margin-left:auto;padding-left:18px;opacity:.7">F2</span></div>' +
+      '<div class="msep"></div>' +
+      '<div class="mi" data-act="acemi">' + chk(G.level === "acemi") + 'Acemi</div>' +
+      '<div class="mi" data-act="orta">' + chk(G.level === "orta") + 'Orta</div>' +
+      '<div class="mi" data-act="uzman">' + chk(G.level === "uzman") + 'Uzman</div>' +
+      '<div class="msep"></div>' +
+      '<div class="mi" data-act="qm">' + chk(G.questionMarks) + 'Soru İşaretleri (?)</div>';
+  }
+  function openMenu(which) {
+    closeMenus();
+    if (which === "game") {
+      renderGameMenu();
+      const r = mGame.getBoundingClientRect();
+      ddGame.style.left = r.left + "px"; ddGame.style.top = r.bottom + "px";
+      ddGame.classList.remove("hidden"); mGame.classList.add("open");
+    } else {
+      ddHelp.innerHTML = '<div class="mi" data-act="about"><span class="chk"></span>Hakkında</div>';
+      const r = mHelp.getBoundingClientRect();
+      ddHelp.style.left = r.left + "px"; ddHelp.style.top = r.bottom + "px";
+      ddHelp.classList.remove("hidden"); mHelp.classList.add("open");
+    }
+  }
+  function closeMenus() {
+    ddGame.classList.add("hidden"); ddHelp.classList.add("hidden");
+    mGame.classList.remove("open"); mHelp.classList.remove("open");
+  }
+  mGame.addEventListener("click", e => { e.stopPropagation(); ddGame.classList.contains("hidden") ? openMenu("game") : closeMenus(); });
+  mHelp.addEventListener("click", e => { e.stopPropagation(); ddHelp.classList.contains("hidden") ? openMenu("help") : closeMenus(); });
+  mGame.addEventListener("mouseenter", () => { if (mHelp.classList.contains("open")) openMenu("game"); });
+  mHelp.addEventListener("mouseenter", () => { if (mGame.classList.contains("open")) openMenu("help"); });
+
+  ddGame.addEventListener("click", e => {
+    const mi = e.target.closest(".mi"); if (!mi) return;
+    const act = mi.dataset.act;
+    if (act === "new") newGame();
+    else if (act === "acemi" || act === "orta" || act === "uzman") newGame(act);
+    else if (act === "qm") { G.questionMarks = !G.questionMarks; }
+    closeMenus();
+  });
+  ddHelp.addEventListener("click", e => {
+    const mi = e.target.closest(".mi"); if (!mi) return;
+    if (mi.dataset.act === "about") alert("Mayın Tarlası\nKlasik Windows tarzı.\n\nSol tık: aç · Sağ tık: bayrak/soru\nSayı üzerine sol tık: çevreyi aç (chord)");
+    closeMenus();
+  });
+  document.addEventListener("click", closeMenus);
+  document.addEventListener("keydown", e => { if (e.key === "F2") { e.preventDefault(); newGame(); } });
+  boardEl.addEventListener("contextmenu", e => e.preventDefault());
+
+  // ---------- Başla ----------
+  newGame("acemi");
+})();
+</script>
+</body>
+</html>

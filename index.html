@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Abdullah Karagöz — Yazılım Geliştirici</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.svg">
+<meta name="theme-color" content="#1a2238">
+<script src="./support.js"></script>
+<style>
+html,body{margin:0;background:#0c0a14}
+.ak-splash{position:fixed;inset:0;z-index:99999;background:#000;display:flex;align-items:center;justify-content:center;font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;color:#fff;transition:opacity .6s ease}
+.ak-splash-in{display:flex;flex-direction:column;align-items:center;gap:30px;text-align:center;padding:0 24px}
+.ak-splash-title{font-weight:700;font-size:27px;letter-spacing:-.3px}
+.ak-splash-title span{display:inline-block;transform-origin:70% 70%;animation:akwave 1.7s ease-in-out infinite}
+.ak-splash-sub{font-size:13px;opacity:.5;font-weight:500;letter-spacing:.2px}
+.ak-splash-bar{width:172px;height:4px;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden}
+.ak-splash-bar i{display:block;height:100%;width:0;border-radius:3px;background:#fff;animation:akfill 2.6s cubic-bezier(.32,.6,.3,1) forwards}
+@keyframes akwave{0%,100%{transform:rotate(0)}20%{transform:rotate(16deg)}40%{transform:rotate(-8deg)}60%{transform:rotate(12deg)}80%{transform:rotate(-4deg)}}
+@keyframes akfill{0%{width:0}55%{width:62%}100%{width:88%}}
+@media (max-width:760px){.ak-splash-title{font-size:23px}}
+</style>
+</head>
+<body>
+<div id="preboot" class="ak-splash"><div class="ak-splash-in"><div class="ak-splash-title">Hi, I'm Abdullah <span>👋</span></div><div class="ak-splash-sub">Yazılım Geliştirici · Software Developer</div><div class="ak-splash-bar"><i></i></div></div></div>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0&display=block" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;background:#0c0a14;overflow:hidden;font-family:'Plus Jakarta Sans',system-ui,sans-serif}
+  *{box-sizing:border-box}
+  .ms{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;line-height:1;letter-spacing:normal;text-transform:none;white-space:nowrap;direction:ltr;font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 40;-webkit-font-smoothing:antialiased;user-select:none}
+  input,textarea{font-family:'Plus Jakarta Sans',system-ui}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:8px}
+  ::-webkit-scrollbar-track{background:transparent}
+  @keyframes blink{0%,48%{opacity:1}49%,100%{opacity:0}}
+  @keyframes dockbounce{0%,100%{transform:translateY(0)}28%{transform:translateY(-24px)}52%{transform:translateY(0)}74%{transform:translateY(-9px)}}
+  @keyframes bootpulse{0%,100%{transform:scale(1);opacity:.92}50%{transform:scale(1.06);opacity:1}}
+  @keyframes bootbar{from{width:0}to{width:100%}}
+  @keyframes winpop{from{opacity:0;scale:.9}to{opacity:1;scale:1}}
+  .tl:hover .tl-c{color:rgba(90,0,0,.7)!important}
+  .tl:hover .tl-m{color:rgba(120,75,0,.85)!important}
+  .tl:hover .tl-x{color:rgba(0,75,12,.8)!important}
+  @media (max-width:760px){
+    .mtrig{display:none!important}
+    .mb-sys{display:none!important}
+    .mbar{gap:6px!important;padding:0 10px!important}
+    .win{transform:none!important;left:6px!important;right:6px!important;top:38px!important;width:auto!important;height:calc(100dvh - 150px)!important;border-radius:16px!important}
+    .rzh{display:none!important}
+    .about-wrap{flex-direction:column!important}
+    .about-side{width:auto!important;flex:none!important;flex-direction:row!important;overflow-x:auto!important;border-right:none!important;border-bottom:.5px solid rgba(255,255,255,.07)!important;padding:8px!important;gap:6px!important}
+    .about-side>div{white-space:nowrap!important;flex:none!important}
+    .proj-grid{grid-template-columns:1fr!important}
+    .dock{left:8px!important;right:8px!important;transform:none!important;max-width:none!important;justify-content:flex-start!important;overflow-x:auto!important;overflow-y:hidden!important;gap:8px!important;padding:8px 10px!important;border-radius:18px!important;-webkit-overflow-scrolling:touch}
+    .mdrop{max-width:calc(100vw - 16px)!important}
+  }
+</style>
+</helmet>
+
+<div style="position:fixed;inset:0;overflow:hidden;user-select:none;-webkit-user-select:none;color:#fff;--accent:{{ accentVar }};--dock:{{ dockVar }};--wall:{{ wallVar }};background:var(--wall,radial-gradient(34% 24% at 75% 80%,rgba(255,237,201,.55),rgba(255,237,201,0) 70%),radial-gradient(150% 120% at 80% 122%,#ffd9a6 0%,#ff9f6b 18%,#f76e8f 38%,#c44f95 56%,#6f3c92 76%,#2a1a46 100%))">
+
+  <!-- ===================== MENU BAR ===================== -->
+  <div class="mbar" style="position:absolute;top:0;left:0;right:0;height:30px;display:flex;align-items:center;gap:3px;padding:0 8px;background:rgba(18,14,26,.4);backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%);z-index:9600;font-size:13px;color:rgba(255,255,255,.94)">
+    <div onClick="{{ akClick }}" onMouseEnter="{{ akHover }}" style="display:flex;align-items:center;padding:0 7px;height:22px;border-radius:6px;cursor:pointer;background:{{ akBg }}"><div style="width:18px;height:18px;border-radius:5px;background:linear-gradient(150deg,#fff,#cfd6e6);color:#1a2238;font:800 9px 'Plus Jakarta Sans';display:flex;align-items:center;justify-content:center">AK</div></div>
+    <div onClick="{{ appClick }}" onMouseEnter="{{ appHover }}" style="font-weight:800;padding:0 8px;height:22px;display:flex;align-items:center;border-radius:6px;cursor:pointer;background:{{ appBg }}">{{ menubarTitle }}</div>
+    <sc-for list="{{ menuTriggers }}" as="t" hint-placeholder-count="5"><div class="mtrig" onClick="{{ t.onClick }}" onMouseEnter="{{ t.onHover }}" style="opacity:.92;font-weight:600;font-size:12.5px;padding:0 8px;height:22px;display:flex;align-items:center;border-radius:6px;cursor:pointer;background:{{ t.bg }}">{{ t.label }}</div></sc-for>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:11px">
+      <span style="display:flex;align-items:center;border:1px solid rgba(255,255,255,.34);border-radius:7px;overflow:hidden;font:700 11px 'Plus Jakarta Sans';cursor:pointer">
+        <sc-if value="{{ isTr }}" hint-placeholder-val="{{ true }}"><span onClick="{{ setTr }}" style="padding:2px 7px;background:#fff;color:#1a2238">TR</span><span onClick="{{ setEn }}" style="padding:2px 7px;opacity:.85">EN</span></sc-if>
+        <sc-if value="{{ isEn }}"><span onClick="{{ setTr }}" style="padding:2px 7px;opacity:.85">TR</span><span onClick="{{ setEn }}" style="padding:2px 7px;background:#fff;color:#1a2238">EN</span></sc-if>
+      </span>
+      <span onClick="{{ searchClick }}" class="ms" style="font-size:17px;cursor:pointer;padding:2px;border-radius:6px;background:{{ searchBg }}">search</span>
+      <span onClick="{{ wifiClick }}" class="ms mb-sys" style="font-size:17px;cursor:pointer;padding:2px;border-radius:6px;background:{{ wifiBg }}">wifi</span>
+      <span onClick="{{ batteryClick }}" class="ms mb-sys" style="font-size:18px;cursor:pointer;padding:2px;border-radius:6px;background:{{ batteryBg }}">battery_horiz_075</span>
+      <span onClick="{{ clockClick }}" style="font-weight:600;font-size:12.5px;min-width:116px;text-align:right;cursor:pointer">{{ clock }}</span>
+    </div>
+  </div>
+
+  <!-- ===================== MENU DROPDOWN ===================== -->
+  <sc-if value="{{ menuOpen }}">
+    <div onClick="{{ closeMenu }}" style="position:fixed;inset:0;z-index:9400"></div>
+    <div class="mdrop" style="position:fixed;top:31px;left:{{ menuLeft }}px;z-index:9500;min-width:218px;max-width:280px;padding:6px;background:rgba(36,34,46,.9);backdrop-filter:blur(34px) saturate(160%);-webkit-backdrop-filter:blur(34px) saturate(160%);border:.5px solid rgba(255,255,255,.16);border-radius:12px;box-shadow:0 30px 70px -18px rgba(0,0,0,.72);font-size:13px">
+      <sc-for list="{{ menuItems }}" as="it" hint-placeholder-count="0">
+        <sc-if value="{{ it.isItem }}"><div onClick="{{ it.onClick }}" style="display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:7px;cursor:pointer;color:rgba(255,255,255,.92)" style-hover="background:var(--accent,#2a6fdb);color:#fff"><span class="ms" style="font-size:17px;width:19px;opacity:.85">{{ it.icon }}</span><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.label }}</span><span class="ms" style="font-size:16px;opacity:{{ it.checkOp }}">check</span></div></sc-if>
+        <sc-if value="{{ it.isHeader }}"><div style="padding:8px 9px 3px;font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:rgba(255,255,255,.45)">{{ it.label }}</div></sc-if>
+        <sc-if value="{{ it.isInfo }}"><div style="display:flex;align-items:center;gap:9px;padding:6px 9px;color:rgba(255,255,255,.72)"><span class="ms" style="font-size:16px;width:19px;opacity:.7">{{ it.icon }}</span><span style="flex:1">{{ it.label }}</span></div></sc-if>
+        <sc-if value="{{ it.isSep }}"><div style="height:1px;background:rgba(255,255,255,.1);margin:5px 6px"></div></sc-if>
+        <sc-if value="{{ it.isSwatch }}"><div style="display:flex;gap:9px;padding:8px 9px"><sc-for list="{{ it.swatches }}" as="sw" hint-placeholder-count="5"><span onClick="{{ sw.onClick }}" title="{{ sw.title }}" style="width:22px;height:22px;border-radius:50%;cursor:pointer;background:{{ sw.color }};box-shadow:0 0 0 {{ sw.ring }} rgba(255,255,255,.92),0 1px 3px rgba(0,0,0,.4)"></span></sc-for></div></sc-if>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- ===================== WINDOWS ===================== -->
+  <sc-for list="{{ allWins }}" as="w" hint-placeholder-count="0">
+  <div key="{{ w.id }}" class="win" data-win="{{ w.id }}" style="position:absolute;top:0;left:0;transform:translate({{ w.x }}px,{{ w.y }}px);width:{{ w.w }}px;height:{{ w.h }}px;z-index:{{ w.z }};display:{{ w.disp }};flex-direction:column;background:rgba(26,24,34,.74);backdrop-filter:blur(40px) saturate(155%);-webkit-backdrop-filter:blur(40px) saturate(155%);border:.5px solid rgba(255,255,255,.14);border-radius:14px;box-shadow:0 46px 110px -28px rgba(0,0,0,.7),0 2px 10px rgba(0,0,0,.3);overflow:hidden;animation:{{ w.anim }}">
+
+    <!-- title bar -->
+    <div data-drag="{{ w.id }}" style="height:44px;flex:none;display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:.5px solid rgba(255,255,255,.08);position:relative;cursor:grab;touch-action:none">
+      <div class="tl" onPointerDown="{{ stop }}" style="display:flex;gap:8px">
+        <button class="tl-c" onClick="{{ w.onClose }}" title="Kapat" style="width:13px;height:13px;border-radius:50%;border:none;background:#ff5f57;display:flex;align-items:center;justify-content:center;font:700 9px 'Plus Jakarta Sans';color:transparent;cursor:pointer;padding:0" style-hover="color:rgba(90,0,0,.65)">✕</button>
+        <button class="tl-m" onClick="{{ w.onMin }}" title="Küçült" style="width:13px;height:13px;border-radius:50%;border:none;background:#febc2e;display:flex;align-items:center;justify-content:center;font:700 11px 'Plus Jakarta Sans';color:transparent;cursor:pointer;padding:0;line-height:1" style-hover="color:rgba(110,70,0,.7)">−</button>
+        <button class="tl-x" onClick="{{ w.onMax }}" title="Büyüt" style="width:13px;height:13px;border-radius:50%;border:none;background:#28c840;display:flex;align-items:center;justify-content:center;font:700 8px 'Plus Jakarta Sans';color:transparent;cursor:pointer;padding:0" style-hover="color:rgba(0,70,10,.7)">+</button>
+      </div>
+      <span style="position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:13px;opacity:.92;pointer-events:none">{{ w.title }}</span>
+    </div>
+
+    <!-- body -->
+    <div style="flex:1;overflow:auto;color:rgba(255,255,255,.86)">
+
+      <!-- ABOUT -->
+      <sc-if value="{{ w.isAbout }}"><div class="about-wrap" style="display:flex;height:100%">
+        <div class="about-side" style="width:172px;flex:none;padding:12px 10px;border-right:.5px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03);display:flex;flex-direction:column;gap:3px;overflow:auto">
+          <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="9">
+            <div onClick="{{ n.onClick }}" style="display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;background:{{ n.bg }};opacity:{{ n.op }}"><span class="ms" style="font-size:17px">{{ n.icon }}</span>{{ n.label }}</div>
+          </sc-for>
+        </div>
+        <div style="flex:1;padding:24px 26px;overflow:auto">
+          <div style="display:flex;align-items:center;gap:17px">
+            <img src="assets/avatar.jpg" onerror="this.onerror=null;this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNzYiIGhlaWdodD0iMTc2Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMyYTZmZGIiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM2YjViZmYiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMTc2IiBoZWlnaHQ9IjE3NiIgcng9Ijg4IiBmaWxsPSJ1cmwoI2cpIi8+PHRleHQgeD0iODgiIHk9IjEyMCIgZm9udC1zaXplPSI3OCIgZm9udC1mYW1pbHk9IlNlZ29lIFVJLEFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiNmZmZmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkFLPC90ZXh0Pjwvc3ZnPg=='" alt="Abdullah Karagöz" style="width:88px;height:88px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.5);box-shadow:0 8px 26px rgba(0,0,0,.45)">
+            <div>
+              <div style="font-size:24px;font-weight:800;letter-spacing:-.4px">{{ profile.name }}</div>
+              <div style="font-size:14px;font-weight:600;color:var(--accent,#2a6fdb);filter:brightness(1.5)">{{ profile.role }}</div>
+              <div style="font-size:12.5px;opacity:.6;margin-top:4px;display:flex;align-items:center;gap:5px"><span class="ms" style="font-size:15px">location_on</span>{{ profile.loc }}</div>
+            </div>
+          </div>
+          <p style="margin:18px 0 0;font-size:13.5px;line-height:1.65;opacity:.86;text-wrap:pretty">{{ summary }}</p>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:18px">
+            <a href="mailto:abdullah.karagoz@outlook.com" style="text-decoration:none;color:#fff;display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:9px;background:rgba(255,255,255,.08);font-size:12px;font-weight:500"><span class="ms" style="font-size:15px;color:var(--accent,#2a6fdb);filter:brightness(1.6)">mail</span>{{ profile.email }}</a>
+            <a href="tel:+905350554579" style="text-decoration:none;color:#fff;display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:9px;background:rgba(255,255,255,.08);font-size:12px;font-weight:500"><span class="ms" style="font-size:15px;color:var(--accent,#2a6fdb);filter:brightness(1.6)">call</span>{{ profile.phone }}</a>
+            <span style="display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:9px;background:rgba(255,255,255,.08);font-size:12px;font-weight:500"><span class="ms" style="font-size:15px;color:var(--accent,#2a6fdb);filter:brightness(1.6)">cake</span>{{ profile.born }}</span>
+          </div>
+          <div style="display:flex;gap:9px;margin-top:14px">
+            <sc-for list="{{ social }}" as="so" hint-placeholder-count="3"><a href="{{ so.url }}" target="_blank" rel="noopener" style="text-decoration:none;color:#fff;display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:9px;background:{{ so.bg }};font-size:12px;font-weight:600"><span class="ms" style="font-size:15px">{{ so.icon }}</span>{{ so.label }}</a></sc-for>
+          </div>
+        </div>
+      </div></sc-if>
+
+      <!-- EXPERIENCE -->
+      <sc-if value="{{ w.isExp }}"><div style="padding:22px 26px">
+        <sc-for list="{{ exp }}" as="e" hint-placeholder-count="5">
+          <div style="display:flex;gap:15px;padding-bottom:20px">
+            <div style="display:flex;flex-direction:column;align-items:center;flex:none;padding-top:4px">
+              <span style="width:11px;height:11px;border-radius:50%;background:{{ e.dot }};box-shadow:0 0 0 4px rgba(255,255,255,.07)"></span>
+              <span style="flex:1;width:2px;background:rgba(255,255,255,.12);margin-top:4px"></span>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:11px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--accent,#2a6fdb);filter:brightness(1.6)">{{ e.period }}</div>
+              <div style="font-size:15.5px;font-weight:800;margin-top:2px">{{ e.company }}</div>
+              <div style="font-size:12.5px;opacity:.7;margin-top:1px">{{ e.role }} · {{ e.place }}</div>
+              <ul style="margin:9px 0 0;padding-left:17px;display:flex;flex-direction:column;gap:5px">
+                <sc-for list="{{ e.points }}" as="p" hint-placeholder-count="2"><li style="font-size:12.5px;line-height:1.5;opacity:.82">{{ p }}</li></sc-for>
+              </ul>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
+                <sc-for list="{{ e.tags }}" as="t" hint-placeholder-count="0"><span style="padding:3px 9px;border-radius:7px;background:rgba(255,255,255,.08);font:600 11px 'JetBrains Mono',monospace;color:rgba(255,255,255,.78)">{{ t }}</span></sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div></sc-if>
+
+      <!-- PROJECTS -->
+      <sc-if value="{{ w.isProjects }}"><div class="proj-grid" style="padding:22px 24px;display:grid;grid-template-columns:1fr 1fr;gap:15px">
+        <sc-for list="{{ projects }}" as="p" hint-placeholder-count="4">
+          <div style="background:rgba(255,255,255,.05);border:.5px solid rgba(255,255,255,.09);border-radius:13px;padding:16px 17px;display:flex;flex-direction:column;transition:transform .18s ease,background .18s ease" style-hover="transform:translateY(-3px);background:rgba(255,255,255,.08)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+              <div style="font-size:15.5px;font-weight:800">{{ p.name }}</div>
+              <div style="font-size:10.5px;font-weight:600;font-family:'JetBrains Mono',monospace;opacity:.5;white-space:nowrap">{{ p.date }}</div>
+            </div>
+            <p style="margin:8px 0 0;font-size:12.5px;line-height:1.5;opacity:.8;flex:1">{{ p.desc }}</p>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">
+              <sc-for list="{{ p.tags }}" as="t" hint-placeholder-count="3"><span style="padding:3px 9px;border-radius:7px;background:rgba(255,255,255,.08);font:600 10.5px 'JetBrains Mono',monospace;color:rgba(255,255,255,.78)">{{ t }}</span></sc-for>
+            </div>
+            <sc-if value="{{ p.hasLink }}"><a href="{{ p.link }}" target="_blank" rel="noopener" style="margin-top:11px;text-decoration:none;color:var(--accent,#2a6fdb);filter:brightness(1.55);font-size:12px;font-weight:700;display:flex;align-items:center;gap:4px">{{ p.linkLabel }}<span class="ms" style="font-size:15px">north_east</span></a></sc-if>
+          </div>
+        </sc-for>
+      </div></sc-if>
+
+      <!-- SKILLS -->
+      <sc-if value="{{ w.isSkills }}"><div style="padding:22px 26px;display:flex;flex-direction:column;gap:17px">
+        <sc-for list="{{ skillGroups }}" as="g" hint-placeholder-count="5">
+          <div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.5)">{{ g.label }}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:11px">
+              <sc-for list="{{ g.items }}" as="i" hint-placeholder-count="5"><span style="padding:6px 13px;border-radius:10px;background:rgba(255,255,255,.08);border:.5px solid rgba(255,255,255,.08);font-size:12.5px;font-weight:600">{{ i }}</span></sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div></sc-if>
+
+      <!-- EDUCATION -->
+      <sc-if value="{{ w.isEdu }}"><div style="padding:22px 26px;display:flex;flex-direction:column;gap:13px">
+        <sc-for list="{{ edu }}" as="e" hint-placeholder-count="2">
+          <div style="background:rgba(255,255,255,.05);border:.5px solid rgba(255,255,255,.08);border-radius:12px;padding:15px 17px;display:flex;gap:14px;align-items:flex-start">
+            <span style="width:42px;height:42px;border-radius:12px;flex:none;background:linear-gradient(150deg,#ffcf6b,#f5a623);display:flex;align-items:center;justify-content:center"><span class="ms" style="font-size:22px;color:#3a2a08">school</span></span>
+            <div>
+              <div style="font-size:14.5px;font-weight:800">{{ e.school }}</div>
+              <div style="font-size:12.5px;opacity:.78;margin-top:2px">{{ e.dept }}</div>
+              <div style="font-size:11.5px;font-weight:600;font-family:'JetBrains Mono',monospace;opacity:.5;margin-top:5px">{{ e.degree }} · {{ e.period }}</div>
+            </div>
+          </div>
+        </sc-for>
+        <div style="margin-top:4px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.5)">{{ ui.langTitle }}</div>
+          <sc-for list="{{ langs }}" as="l" hint-placeholder-count="1">
+            <div style="display:flex;align-items:center;gap:12px;margin-top:11px">
+              <span style="font-size:13px;font-weight:600;width:90px">{{ l.name }}</span>
+              <div style="flex:1;height:6px;border-radius:4px;background:rgba(255,255,255,.1);overflow:hidden;max-width:220px"><div style="height:100%;width:{{ l.pct }}%;background:var(--accent,#2a6fdb);filter:brightness(1.4);border-radius:4px"></div></div>
+              <span style="font-size:12px;opacity:.6">{{ l.level }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div></sc-if>
+
+      <!-- CERTIFICATES -->
+      <sc-if value="{{ w.isCerts }}"><div style="padding:22px 26px;display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ certs }}" as="c" hint-placeholder-count="1">
+          <div style="background:rgba(255,255,255,.05);border:.5px solid rgba(255,255,255,.08);border-radius:12px;padding:16px 17px;display:flex;gap:14px;align-items:center">
+            <span style="width:46px;height:46px;border-radius:13px;flex:none;background:linear-gradient(150deg,#ff8fae,#e8537d);display:flex;align-items:center;justify-content:center"><span class="ms" style="font-size:24px">workspace_premium</span></span>
+            <div>
+              <div style="font-size:14px;font-weight:700">{{ c.name }}</div>
+              <div style="font-size:12px;opacity:.65;margin-top:3px">{{ c.meta }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div></sc-if>
+
+      <!-- HOBBIES -->
+      <sc-if value="{{ w.isHobbies }}"><div style="padding:22px 26px;display:flex;flex-direction:column;gap:13px">
+        <sc-for list="{{ hobbies }}" as="h" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:15px">
+            <span style="width:48px;height:48px;border-radius:14px;flex:none;background:rgba(255,255,255,.09);display:flex;align-items:center;justify-content:center"><span class="ms" style="font-size:24px;color:#ffd29a">{{ h.icon }}</span></span>
+            <div>
+              <div style="font-size:14.5px;font-weight:700">{{ h.label }}</div>
+              <div style="font-size:12.5px;opacity:.66;margin-top:2px">{{ h.desc }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div></sc-if>
+
+      <!-- CONTACT -->
+      <sc-if value="{{ w.isContact }}"><div style="padding:22px 26px">
+        <p style="margin:0 0 16px;font-size:13.5px;line-height:1.55;opacity:.82">{{ ui.contactIntro }}</p>
+        <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:18px">
+          <a href="mailto:abdullah.karagoz@outlook.com" style="text-decoration:none;color:#fff;display:flex;align-items:center;gap:11px;font-size:13px"><span class="ms" style="font-size:19px;color:var(--accent,#2a6fdb);filter:brightness(1.6)">mail</span>abdullah.karagoz@outlook.com</a>
+          <a href="tel:+905350554579" style="text-decoration:none;color:#fff;display:flex;align-items:center;gap:11px;font-size:13px"><span class="ms" style="font-size:19px;color:var(--accent,#2a6fdb);filter:brightness(1.6)">call</span>+90 535 055 45 79</a>
+          <div style="display:flex;align-items:center;gap:11px;font-size:13px;opacity:.82"><span class="ms" style="font-size:19px;color:var(--accent,#2a6fdb);filter:brightness(1.6)">location_on</span>İstanbul, Türkiye</div>
+        </div>
+        <sc-if value="{{ notSent }}" hint-placeholder-val="{{ true }}"><div style="display:flex;flex-direction:column;gap:10px">
+          <input value="{{ contact.name }}" onInput="{{ onName }}" placeholder="{{ ui.formName }}" style="width:100%;padding:11px 13px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#fff;font-size:13px;outline:none" style-focus="border-color:var(--accent,#2a6fdb)">
+          <input value="{{ contact.email }}" onInput="{{ onEmail }}" placeholder="{{ ui.formEmail }}" style="width:100%;padding:11px 13px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#fff;font-size:13px;outline:none" style-focus="border-color:var(--accent,#2a6fdb)">
+          <textarea value="{{ contact.msg }}" onInput="{{ onMsg }}" placeholder="{{ ui.formMsg }}" rows="4" style="width:100%;padding:11px 13px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#fff;font-size:13px;outline:none;resize:none;font-family:'Plus Jakarta Sans'" style-focus="border-color:var(--accent,#2a6fdb)"></textarea>
+          <sc-if value="{{ contact.err }}"><div style="font-size:12px;color:#ff8585;display:flex;align-items:center;gap:6px"><span class="ms" style="font-size:15px">error</span>{{ contact.err }}</div></sc-if>
+          <button onClick="{{ sendContact }}" style="align-self:flex-start;background:var(--accent,#2a6fdb);color:#fff;border:none;border-radius:10px;padding:10px 20px;font:700 13px 'Plus Jakarta Sans';cursor:pointer;display:flex;align-items:center;gap:7px;margin-top:2px" style-hover="filter:brightness(1.1)"><span class="ms" style="font-size:17px">send</span>{{ ui.send }}</button>
+        </div></sc-if>
+        <sc-if value="{{ contact.sent }}"><div style="background:rgba(40,200,100,.12);border:.5px solid rgba(40,200,100,.35);border-radius:12px;padding:18px;display:flex;flex-direction:column;align-items:flex-start;gap:11px">
+          <div style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600"><span class="ms" style="font-size:24px;color:#3ad07e">check_circle</span>{{ ui.sent }}</div>
+          <button onClick="{{ resetContact }}" style="background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:9px;padding:8px 15px;font:600 12.5px 'Plus Jakarta Sans';cursor:pointer">{{ ui.newMsg }}</button>
+        </div></sc-if>
+      </div></sc-if>
+
+      <!-- CV / PDF -->
+      <sc-if value="{{ w.isCv }}"><div style="display:flex;flex-direction:column;height:100%">
+        <div style="flex:none;display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:.5px solid rgba(255,255,255,.08)">
+          <div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px"><span class="ms" style="font-size:18px">picture_as_pdf</span>Abdullah_Karagoz_CV.pdf</div>
+          <a href="assets/Abdullah-Karagoz-CV.pdf" download="Abdullah-Karagoz-CV.pdf" style="text-decoration:none;background:var(--accent,#2a6fdb);color:#fff;border-radius:9px;padding:8px 15px;font:700 12.5px 'Plus Jakarta Sans';display:flex;align-items:center;gap:6px" style-hover="filter:brightness(1.1)"><span class="ms" style="font-size:16px">download</span>{{ ui.download }}</a>
+        </div>
+        <iframe src="assets/Abdullah-Karagoz-CV.pdf" title="CV" style="flex:1;width:100%;border:none;background:#525659"></iframe>
+      </div></sc-if>
+
+      <!-- GAME (Yılan) -->
+      <sc-if value="{{ w.isGame }}"><div style="display:flex;flex-direction:column;height:100%">
+        <iframe src="game/index.html" title="Neon Yılan" style="flex:1;width:100%;border:none;background:#07070f"></iframe>
+      </div></sc-if>
+
+      <!-- ROAD FIGHTER -->
+      <sc-if value="{{ w.isRoad }}"><div style="display:flex;flex-direction:column;height:100%">
+        <iframe src="game/road-fighter.html" title="Road Fighter" style="flex:1;width:100%;border:none;background:#0b1020"></iframe>
+      </div></sc-if>
+
+      <!-- MAYIN TARLASI -->
+      <sc-if value="{{ w.isMines }}"><div style="display:flex;flex-direction:column;height:100%">
+        <iframe src="game/minesweeper.html" title="Mayın Tarlası" style="flex:1;width:100%;border:none;background:#008080"></iframe>
+      </div></sc-if>
+
+      <!-- DUCK HUNT -->
+      <sc-if value="{{ w.isDuck }}"><div style="display:flex;flex-direction:column;height:100%">
+        <iframe src="duck-hunt.html" title="Duck Hunt" allow="fullscreen" style="flex:1;width:100%;border:none;background:#0a0a0d"></iframe>
+      </div></sc-if>
+
+      <!-- 2048 -->
+      <sc-if value="{{ w.isG2048 }}"><div style="display:flex;flex-direction:column;height:100%">
+        <iframe src="game/2048.html" title="2048" style="flex:1;width:100%;border:none;background:#e7ecf3"></iframe>
+      </div></sc-if>
+
+      <!-- RADYO -->
+      <sc-if value="{{ w.isRadio }}"><div style="display:flex;flex-direction:column;height:100%">
+        <iframe src="radio.html" title="Radyo" allow="autoplay" style="flex:1;width:100%;border:none;background:#0f1320"></iframe>
+      </div></sc-if>
+
+      <!-- TERMINAL -->
+      <sc-if value="{{ w.isTerminal }}"><div style="display:flex;flex-direction:column;height:100%;background:rgba(10,11,16,.55)">
+        <div ref="{{ termRef }}" style="flex:1;overflow:auto;padding:16px 18px;font-family:'JetBrains Mono',monospace;font-size:12.7px;line-height:1.7">
+          <sc-for list="{{ term.lines }}" as="l" hint-placeholder-count="0">
+            <div style="white-space:pre-wrap;word-break:break-word;color:{{ l.color }}"><sc-if value="{{ l.prompt }}"><span style="color:#27d07e">➜</span> <span style="color:#61afef">~</span> </sc-if>{{ l.text }}</div>
+          </sc-for>
+          <div style="display:flex;align-items:center;gap:7px;margin-top:2px"><span style="color:#27d07e">➜</span><span style="color:#61afef">~</span><input value="{{ term.input }}" onInput="{{ onTermInput }}" data-term="1" spellcheck="false" autocomplete="off" style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:'JetBrains Mono',monospace;font-size:12.7px;caret-color:#27d07e"></div>
+        </div>
+        <div style="flex:none;padding:7px 16px;border-top:.5px solid rgba(255,255,255,.07);font-size:11px;opacity:.45;font-family:'JetBrains Mono',monospace">{{ ui.terminalHint }}</div>
+      </div></sc-if>
+
+    </div>
+    <div class="rzh" data-rz="{{ w.id }}" data-dir="n" style="position:absolute;top:0;left:12px;right:12px;height:6px;cursor:ns-resize;z-index:7;touch-action:none"></div>
+    <div class="rzh" data-rz="{{ w.id }}" data-dir="s" style="position:absolute;bottom:0;left:12px;right:12px;height:6px;cursor:ns-resize;z-index:7;touch-action:none"></div>
+    <div class="rzh" data-rz="{{ w.id }}" data-dir="w" style="position:absolute;left:0;top:12px;bottom:12px;width:6px;cursor:ew-resize;z-index:7;touch-action:none"></div>
+    <div class="rzh" data-rz="{{ w.id }}" data-dir="e" style="position:absolute;right:0;top:12px;bottom:12px;width:6px;cursor:ew-resize;z-index:7;touch-action:none"></div>
+    <div class="rzh" data-rz="{{ w.id }}" data-dir="nw" style="position:absolute;top:0;left:0;width:13px;height:13px;cursor:nwse-resize;z-index:8;touch-action:none"></div>
+    <div class="rzh" data-rz="{{ w.id }}" data-dir="ne" style="position:absolute;top:0;right:0;width:13px;height:13px;cursor:nesw-resize;z-index:8;touch-action:none"></div>
+    <div class="rzh" data-rz="{{ w.id }}" data-dir="sw" style="position:absolute;bottom:0;left:0;width:13px;height:13px;cursor:nesw-resize;z-index:8;touch-action:none"></div>
+    <div class="rzh" data-rz="{{ w.id }}" data-dir="se" style="position:absolute;bottom:0;right:0;width:16px;height:16px;cursor:nwse-resize;z-index:8;touch-action:none"></div>
+  </div>
+  </sc-for>
+
+  <!-- ===================== DOCK ===================== -->
+  <div class="dock" style="position:absolute;bottom:13px;left:50%;transform:translateX(-50%);display:flex;align-items:flex-end;gap:11px;padding:9px 13px;background:rgba(44,42,56,.42);backdrop-filter:blur(30px) saturate(170%);-webkit-backdrop-filter:blur(30px) saturate(170%);border:.5px solid rgba(255,255,255,.18);border-radius:23px;box-shadow:0 22px 55px -12px rgba(0,0,0,.55);z-index:8000">
+    <sc-for list="{{ dock }}" as="d" hint-placeholder-count="11">
+      <div onClick="{{ d.onClick }}" title="{{ d.title }}" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer">
+        <sc-if value="{{ d.isApp }}">
+        <div style="width:var(--dock,50px);height:var(--dock,50px);border-radius:13px;display:flex;align-items:center;justify-content:center;background:{{ d.grad }};box-shadow:inset 0 1px 0 rgba(255,255,255,.32),0 5px 12px rgba(0,0,0,.35);transition:transform .2s cubic-bezier(.34,1.56,.64,1);animation:{{ d.bounce }}" style-hover="transform:translateY(-13px) scale(1.16)">
+          <span class="ms" style="font-size:calc(var(--dock,50px) * .54);color:#fff">{{ d.icon }}</span>
+        </div>
+        </sc-if>
+        <sc-if value="{{ d.isFolder }}">
+        <div style="width:var(--dock,50px);height:var(--dock,50px);border-radius:13px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:3px;padding:5px;background:rgba(255,255,255,.16);border:.5px solid rgba(255,255,255,.28);backdrop-filter:blur(7px) saturate(140%);-webkit-backdrop-filter:blur(7px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 5px 12px rgba(0,0,0,.35);transition:transform .2s cubic-bezier(.34,1.56,.64,1);animation:{{ d.bounce }}" style-hover="transform:translateY(-13px) scale(1.16)">
+          <sc-for list="{{ d.minis }}" as="m" hint-placeholder-count="4"><span style="border-radius:4px;background:{{ m.grad }};display:flex;align-items:center;justify-content:center;overflow:hidden"><span class="ms" style="font-size:calc(var(--dock,50px) * .2);color:rgba(255,255,255,.95)">{{ m.icon }}</span></span></sc-for>
+        </div>
+        </sc-if>
+        <div style="width:4px;height:4px;border-radius:50%;background:{{ d.dot }}"></div>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- ===================== GAMES FOLDER (açılır) ===================== -->
+  <sc-if value="{{ gamesOpen }}">
+    <div onClick="{{ closeGames }}" style="position:fixed;inset:0;z-index:8100"></div>
+    <div style="position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:8200;width:min(92vw,460px);padding:18px 20px 22px;background:rgba(34,32,44,.82);backdrop-filter:blur(36px) saturate(165%);-webkit-backdrop-filter:blur(36px) saturate(165%);border:.5px solid rgba(255,255,255,.16);border-radius:24px;box-shadow:0 34px 80px -18px rgba(0,0,0,.74)">
+      <div style="font-size:13px;font-weight:700;opacity:.72;margin-bottom:15px;letter-spacing:.3px">{{ gamesTitle }}</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px 8px">
+        <sc-for list="{{ games }}" as="g" hint-placeholder-count="4">
+          <div onClick="{{ g.onClick }}" title="{{ g.title }}" style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;padding:7px 2px;border-radius:14px" style-hover="background:rgba(255,255,255,.08)">
+            <div style="width:62px;height:62px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:{{ g.grad }};box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 7px 16px rgba(0,0,0,.42)"><span class="ms" style="font-size:33px;color:#fff">{{ g.icon }}</span></div>
+            <span style="font-size:11.5px;font-weight:600;text-align:center;line-height:1.2;max-width:74px">{{ g.title }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <a ref="{{ cvRef }}" href="assets/Abdullah-Karagoz-CV.pdf" download="Abdullah-Karagoz-CV.pdf" aria-hidden="true" style="display:none"></a>
+  <sc-if value="{{ toast }}">
+    <div style="position:fixed;bottom:92px;left:50%;transform:translateX(-50%);z-index:9700;background:rgba(20,18,28,.9);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);border:.5px solid rgba(255,255,255,.16);border-radius:11px;padding:11px 18px;font-size:13px;font-weight:600;box-shadow:0 20px 50px -12px rgba(0,0,0,.6);display:flex;align-items:center;gap:9px"><span class="ms" style="font-size:18px;color:#3ad07e">check_circle</span>{{ toast }}</div>
+  </sc-if>
+
+  <!-- boot handled by instant static #preboot splash outside x-dc -->
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#2a6fdb&quot;,&quot;options&quot;:[&quot;#2a6fdb&quot;,&quot;#6b5bff&quot;,&quot;#1f9e8f&quot;,&quot;#e8743b&quot;,&quot;#52525b&quot;],&quot;tsType&quot;:&quot;string&quot;},&quot;wallpaper&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;sunset&quot;,&quot;cool&quot;,&quot;teal&quot;,&quot;graphite&quot;,&quot;night&quot;],&quot;default&quot;:&quot;sunset&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;dockSize&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;small&quot;,&quot;medium&quot;,&quot;large&quot;],&quot;default&quot;:&quot;small&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { booting:true, bootGone:false, lang:'tr', wins:{}, zTop:10, focused:null, clock:'', bounce:null, menuOpen:null, menuLeft:8, wall:'sunset', accent:'#2a6fdb', dockSize:'medium', toast:'', contact:{name:'',email:'',msg:'',err:'',sent:false}, term:{lines:[],input:''} };
+
+  APPS = {
+    about:   {title:{tr:'Hakkımda',en:'About'},          icon:'person',            grad:'linear-gradient(160deg,#4a8cff,#2a6fdb)', w:672, h:486},
+    exp:     {title:{tr:'İş Deneyimi',en:'Experience'},  icon:'work',              grad:'linear-gradient(160deg,#7b8cff,#4f5bd6)', w:640, h:540},
+    projects:{title:{tr:'Projeler',en:'Projects'},       icon:'folder_open',       grad:'linear-gradient(160deg,#2fd0c5,#179e93)', w:760, h:558},
+    skills:  {title:{tr:'Yetenekler',en:'Skills'},       icon:'code',              grad:'linear-gradient(160deg,#b07bff,#7a3fe0)', w:600, h:500},
+    edu:     {title:{tr:'Eğitim',en:'Education'},         icon:'school',            grad:'linear-gradient(160deg,#ffcf6b,#f5a623)', w:620, h:470},
+    certs:   {title:{tr:'Sertifikalar',en:'Certificates'},icon:'workspace_premium',grad:'linear-gradient(160deg,#ff8fae,#e8537d)', w:560, h:392},
+    hobbies: {title:{tr:'Hobiler',en:'Hobbies'},         icon:'fitness_center',    grad:'linear-gradient(160deg,#6fe08a,#27a65a)', w:560, h:392},
+    contact: {title:{tr:'İletişim',en:'Contact'},        icon:'mail',              grad:'linear-gradient(160deg,#5fd0ff,#2a96db)', w:584, h:556},
+    cv:      {title:{tr:'CV (PDF)',en:'Resume (PDF)'},    icon:'description',       grad:'linear-gradient(160deg,#aab4c4,#697587)', w:820, h:616},
+    terminal:{title:{tr:'Terminal',en:'Terminal'},       icon:'terminal',          grad:'linear-gradient(160deg,#3a3a46,#16161c)', w:680, h:452},
+    game:    {title:{tr:'Yılan',en:'Snake'},             icon:'sports_esports',    grad:'linear-gradient(160deg,#00ffd5,#ff2e88)', w:520, h:640},
+    road:    {title:{tr:'Road Fighter',en:'Road Fighter'},icon:'directions_car',   grad:'linear-gradient(160deg,#ffcf2e,#ff8a00)', w:460, h:720},
+    mines:   {title:{tr:'Mayın Tarlası',en:'Minesweeper'}, icon:'grid_on',          grad:'linear-gradient(160deg,#e9edf2,#9aa3b2)', w:360, h:480},
+    duck:    {title:{tr:'Duck Hunt',en:'Duck Hunt'},     icon:'adjust',           grad:'linear-gradient(160deg,#5fa0ff,#2f7d2a)', w:560, h:640},
+    g2048:   {title:{tr:'2048',en:'2048'},               icon:'grid_4x4',         grad:'linear-gradient(160deg,#f6c453,#e8743b)', w:460, h:600},
+    radio:   {title:{tr:'Radyo',en:'Radio'},             icon:'radio',            grad:'linear-gradient(160deg,#2dd4bf,#0e7490)', w:380, h:560},
+  };
+
+  D = {
+    tr: {
+      role:'Yazılım Geliştirici', loc:'İstanbul, Türkiye',
+      summary:'Yeni teknolojileri takip eden, kendini geliştirmeye ve araştırmaya önem veren, iş disiplinine sahip ve öğrenmeye açık bir yazılım geliştirici. Şu anda SÜVARİ & Devoplus bünyesinde .NET odaklı projeler geliştiriyorum.',
+      ui:{ menu:['Dosya','Düzen','Görünüm','Pencere','Yardım'], formName:'Ad Soyad', formEmail:'E-posta', formMsg:'Mesajın', send:'Gönder', sent:'Teşekkürler! Mesajın alındı, en kısa sürede dönüş yapacağım.', newMsg:'Yeni mesaj', errName:'Lütfen adını gir.', errEmail:'Geçerli bir e-posta gir.', errMsg:'Lütfen bir mesaj yaz.', contactIntro:'Bir proje, fırsat ya da sadece merhaba demek için yazabilirsin.', download:'CV’yi indir', langTitle:'Diller', terminalHint:'komut yaz, Enter’a bas — `help`' },
+      exp:[
+        {company:'SÜVARİ', role:'Yazılım Geliştirici', period:'Nisan 2025 — Halen', place:'İstanbul · Tam zamanlı', dot:'#34d058', points:['Kurumsal yazılım uygulamalarının geliştirilmesi ve sürdürülmesi.'], tags:['C#','.NET','JavaScript']},
+        {company:'Devoplus', role:'Yazılım Geliştirici', period:'Nisan 2025 — Halen', place:'İstanbul · Tam zamanlı', dot:'#2fd0a6', points:['Yazılım geliştirme süreçlerinde uçtan uca görev.'], tags:['C#','.NET']},
+        {company:'CGV Mars Cinema Group', role:'Yazılım Geliştirici', period:'Kasım 2023 — Nisan 2025', place:'İstanbul · Tam zamanlı', dot:'#4a8cff', points:['Gereksinim toplama, sistem tasarımı, kodlama, test, dağıtım ve bakım dahil tüm yazılım geliştirme yaşam döngüsünü yönettim.','GitHub ve ClickUp süreçlerini hayata geçirerek proje ve kod deposu yönetimini optimize ettim.'], tags:['.NET 8','Mikroservis','CQRS','SQL Server']},
+        {company:'Nexum Boğaziçi', role:'Yazılım Geliştirici', period:'Mart 2021 — Şubat 2023', place:'İstanbul · Tam zamanlı', dot:'#7b8cff', points:['Enterprise & Alamo Rent A Car, Tavuk Dünyası ve Twitburc projelerinde uçtan uca geliştirme.','Agile (Scrum) süreçleriyle yeni ve mevcut projelerde aktif rol aldım.'], tags:['C#','.NET Core 3.1','ASP.NET Core','EF Core','Redis','RabbitMQ','DDD','ABP']},
+        {company:'Emir Varlık Yönetim', role:'Yazılım Geliştirici', period:'Ağustos 2020 — Mart 2021', place:'İstanbul · Finansal Hizmetler', dot:'#b07bff', points:['Şirketin finansal projelerinde yazılım geliştirici olarak görev aldım.'], tags:['C#','.NET Framework','ASP.NET MVC','MSSQL','jQuery']},
+        {company:'BilgeAdam Teknoloji', role:'Yazılım Eğitim Programı (Trainee)', period:'Temmuz 2019 — Ocak 2020', place:'İstanbul · Eğitim', dot:'#f5a623', points:['İŞKUR iş birliğiyle Nitelikli Bilişim Uzmanı programına seçildim; 800 saatlik (5 ay) eğitim için tam burs kazandım.','MSSQL, C#.NET, OOP, Web API, EF, MVC, SOLID, Scrum, GitHub ve daha fazlasıyla projeler geliştirdim.'], tags:['C#','OOP','Web API','EF','MVC','SOLID']},
+        {company:'Abant İzzet Baysal Üniversitesi', role:'Bilgi İşlem Elemanı', period:'Temmuz 2016 — Haziran 2017', place:'Bolu · Yarı zamanlı', dot:'#7c8694', points:['Üniversite eğitimim sırasında fakültenin BT (Bilişim Teknolojileri) departmanında yarı zamanlı görev aldım.'], tags:[]},
+      ],
+      projects:[
+        {name:'AraçServisi — Türkiye Geneli Oto Servis & Yol Yardım Platformu', date:'Haz 2026 – Devam ediyor', desc:'Araç sahiplerini en yakın doğrulanmış oto servisi, çekici, lastikçi ve acil yol yardım hizmetiyle buluşturan uçtan uca bir web platformu. Şehir, kategori ve acil durum bazlı filtreleme, vergi/Google doğrulamalı servis kayıtları, değerlendirme sistemi, servis sahipleri için yönetim paneli, blog ve forum modüllerini içeriyor.', tags:['Web Platformu','Yol Yardımı','Çok Kategorili Arama','Blog & Forum'], hasLink:true, link:'https://www.aracservisi.com', linkLabel:'Siteyi aç'},
+        {name:'CoreNote', date:'Haziran 2026', desc:'VS Code için uçtan uca şifreli (AES-256-GCM), cihazlar arası senkronize not eklentisi. Notlar kendi GitHub Gist’lerinizde saklanır; Ctrl+S ile şifrelenip buluta gönderilir, kurtarma anahtarıyla erişim güvence altına alınır.', tags:['VS Code','TypeScript','AES-256-GCM','GitHub Gist'], hasLink:true, link:'https://marketplace.visualstudio.com/items?itemName=abdullahkaragoz.corenote', linkLabel:'Mağazada aç'},
+        {name:'DevoCache', date:'Mart 2026', desc:'Web geliştiriciler için tek tıkla tarayıcı önbelleğini ve seçili site verilerini (Cache, IndexedDB, LocalStorage, Service Worker) temizleyen; sayfa yenilendiğinde otomatik temizleme de yapabilen hafif bir Chrome eklentisi.', tags:['Chrome Extension','JavaScript','Manifest V3'], hasLink:true, link:'https://chromewebstore.google.com/detail/devocache/kgoimmhilepbgcnmidclicefeddnamje', linkLabel:'Mağazada aç'},
+        {name:'CGV Report', date:'Ocak 2024', desc:'Gelişmiş satış ve gelir analitiği sunan sofistike bir raporlama sistemi. Mimariyi sıfırdan tasarlayıp token yönetimli bir API ağ geçidi geliştirdim.', tags:['.NET 8','Ocelot','IdentityServer4','DDD','CQRS','SQL Server'], hasLink:false},
+        {name:'CGV Dashboard', date:'Kasım 2023', desc:'Sinemaların günlük kapanış işlemlerini yöneten ve Logo muhasebe yazılımıyla entegre olan kapsamlı çözüm. 80 şubeye başarıyla dağıtıldı.', tags:['.NET','SQL Server','Logo'], hasLink:false},
+        {name:'CGV Film Programming', date:'Kasım 2023', desc:'Sinemalar için film programlamayı kolaylaştıran seans yönetim sistemi; planlama ekibinin süreçlerini optimize eden özellikler geliştirdim.', tags:['.NET Core','T-SQL'], hasLink:false},
+        {name:'Enterprise Rent A Car', date:'2021 — 2023', desc:'Araç kiralama rezervasyonu, filo yönetimi ve kampanya düzenlemelerinde Backend Developer olarak görev aldım.', tags:['ASP.NET Core','EF Core','Redis','RabbitMQ'], hasLink:true, link:'https://www.enterprise.com.tr', linkLabel:'Siteyi aç'},
+        {name:'Alamo Rent A Car', date:'2021 — 2023', desc:'Nexum bünyesinde araç kiralama platformunda uçtan uca geliştirme; rezervasyon ve filo yönetimi.', tags:['ASP.NET Core','EF Core','T-SQL'], hasLink:true, link:'https://www.alamo.com.tr', linkLabel:'Siteyi aç'},
+        {name:'Tavuk Dünyası', date:'2021 — 2023', desc:'Sefteniste.com sipariş ve kampanya platformunda uçtan uca geliştirme.', tags:['ASP.NET Core','C#','T-SQL'], hasLink:true, link:'https://www.sefteniste.com', linkLabel:'Siteyi aç'},
+        {name:'Twitburc', date:'2021 — 2023', desc:'twitburc.com.tr için web uygulaması geliştirme ve bakım.', tags:['ASP.NET MVC','C#','jQuery'], hasLink:true, link:'https://www.twitburc.com.tr', linkLabel:'Siteyi aç'},
+      ],
+      skillGroups:[
+        {label:'Diller', items:['C#','JavaScript','T-SQL','HTML','CSS']},
+        {label:'Backend & Framework', items:['.NET / .NET Core','ASP.NET MVC','ASP.NET Web API','Entity Framework Core','ABP Framework']},
+        {label:'Mimari', items:['OOP','SOLID','DDD','CQRS','RESTful','Mikroservis']},
+        {label:'Veri & Mesajlaşma', items:['MS SQL Server','Redis','RabbitMQ','SOAP']},
+        {label:'Araçlar & Süreç', items:['Git / GitHub','TFS','ClickUp','Scrum / Agile']},
+      ],
+      edu:[
+        {school:'Anadolu Üniversitesi', dept:'Yönetim Bilişim Sistemleri — Açıköğretim Fakültesi', degree:'Lisans', period:'Ekim 2020 — Devam ediyor'},
+        {school:'Abant İzzet Baysal Üniversitesi', dept:'Bilgisayar Programcılığı — Gerede MYO', degree:'Ön Lisans', period:'Ekim 2016 — Eylül 2018'},
+      ],
+      langs:[{name:'Türkçe', level:'Anadili', pct:100},{name:'İngilizce', level:'Orta', pct:55}],
+      certs:[{name:'Agile Scrum Workshop Program', meta:'Atölye Programı'},{name:'Bilge Adam Yazılım Kursu Katılım Sertifikası', meta:'Bilge Adam · Ocak 2020'}],
+      hobbies:[
+        {icon:'fitness_center', label:'Fitness', desc:'Düzenli antrenman ve sağlıklı yaşam.'},
+        {icon:'forest', label:'Doğa yürüyüşü', desc:'Hafta sonları doğada uzun yürüyüşler.'},
+        {icon:'menu_book', label:'Kişisel gelişim kitapları', desc:'Sürekli öğrenme ve okuma.'},
+      ],
+      welcome:'PortfolioOS — geliştirici terminali. Komutlar için `help` yaz.',
+    },
+    en: {
+      role:'Software Developer', loc:'İstanbul, Türkiye',
+      summary:'A software developer who follows new technologies, values self-improvement and research, has work discipline and is eager to learn. Currently building .NET-focused projects at SÜVARİ & Devoplus.',
+      ui:{ menu:['File','Edit','View','Window','Help'], formName:'Full name', formEmail:'Email', formMsg:'Your message', send:'Send', sent:'Thanks! Your message has been received — I’ll get back to you soon.', newMsg:'New message', errName:'Please enter your name.', errEmail:'Enter a valid email.', errMsg:'Please write a message.', contactIntro:'Reach out about a project, an opportunity, or just to say hi.', download:'Download CV', langTitle:'Languages', terminalHint:'type a command, hit Enter — `help`' },
+      exp:[
+        {company:'SÜVARİ', role:'Software Developer', period:'Apr 2025 — Present', place:'İstanbul · Full-time', dot:'#34d058', points:['Development and maintenance of enterprise software applications.'], tags:['C#','.NET','JavaScript']},
+        {company:'Devoplus', role:'Software Developer', period:'Apr 2025 — Present', place:'İstanbul · Full-time', dot:'#2fd0a6', points:['End-to-end involvement in software development processes.'], tags:['C#','.NET']},
+        {company:'CGV Mars Cinema Group', role:'Software Developer', period:'Nov 2023 — Apr 2025', place:'İstanbul · Full-time', dot:'#4a8cff', points:['I managed the full software development lifecycle: requirement gathering, system design, coding, testing, deployment and maintenance.','Introduced GitHub and ClickUp to optimise project and code-repository management.'], tags:['.NET 8','Microservices','CQRS','SQL Server']},
+        {company:'Nexum Boğaziçi', role:'Software Developer', period:'Mar 2021 — Feb 2023', place:'İstanbul · Full-time', dot:'#7b8cff', points:['End-to-end development on Enterprise & Alamo Rent A Car, Tavuk Dünyası and Twitburc.','Active role on new and existing projects following Agile (Scrum).'], tags:['C#','.NET Core 3.1','ASP.NET Core','EF Core','Redis','RabbitMQ','DDD','ABP']},
+        {company:'Emir Varlık Yönetim', role:'Software Developer', period:'Aug 2020 — Mar 2021', place:'İstanbul · Financial Services', dot:'#b07bff', points:['Worked as a software developer on the company’s financial projects.'], tags:['C#','.NET Framework','ASP.NET MVC','MSSQL','jQuery']},
+        {company:'BilgeAdam Teknoloji', role:'Software Trainee', period:'Jul 2019 — Jan 2020', place:'İstanbul · Training', dot:'#f5a623', points:['Selected for the “Qualified IT Specialist” programme with İŞKUR; earned a full scholarship for the 800-hour (5-month) course.','Built projects with MSSQL, C#.NET, OOP, Web API, EF, MVC, SOLID, Scrum, GitHub and more.'], tags:['C#','OOP','Web API','EF','MVC','SOLID']},
+        {company:'Abant İzzet Baysal University', role:'IT Specialist', period:'Jul 2016 — Jun 2017', place:'Bolu · Part-time', dot:'#7c8694', points:['Worked part-time in the faculty’s IT department during my studies.'], tags:[]},
+      ],
+      projects:[
+        {name:'AraçServisi — Türkiye-wide Auto Service & Roadside Assistance Platform', date:'Jun 2026 — Present', desc:'An end-to-end web platform connecting vehicle owners with the nearest verified auto service, tow truck, tire shop and emergency roadside assistance. It features city/category/emergency-based filtering, tax/Google-verified service listings, a review system, an admin panel for service owners, plus blog and forum modules.', tags:['Web Platform','Roadside Assistance','Multi-category Search','Blog & Forum'], hasLink:true, link:'https://www.aracservisi.com', linkLabel:'Open site'},
+        {name:'CoreNote', date:'Jun 2026', desc:'An end-to-end encrypted (AES-256-GCM), cross-device notes extension for VS Code. Notes live in your own GitHub Gists — encrypted on Ctrl+S and synced everywhere, with a recovery key for safe access.', tags:['VS Code','TypeScript','AES-256-GCM','GitHub Gist'], hasLink:true, link:'https://marketplace.visualstudio.com/items?itemName=abdullahkaragoz.corenote', linkLabel:'View on Marketplace'},
+        {name:'DevoCache', date:'Mar 2026', desc:'A lightweight Chrome extension for web developers that clears the browser cache and selected site data (Cache, IndexedDB, LocalStorage, Service Workers) in one click, with optional auto-clear on page reload.', tags:['Chrome Extension','JavaScript','Manifest V3'], hasLink:true, link:'https://chromewebstore.google.com/detail/devocache/kgoimmhilepbgcnmidclicefeddnamje', linkLabel:'View on store'},
+        {name:'CGV Report', date:'Jan 2024', desc:'A sophisticated reporting system for advanced sales and revenue analytics. I designed the architecture from scratch and built an API gateway with token management.', tags:['.NET 8','Ocelot','IdentityServer4','DDD','CQRS','SQL Server'], hasLink:false},
+        {name:'CGV Dashboard', date:'Nov 2023', desc:'A comprehensive solution managing cinemas’ daily closing operations, integrated with Logo accounting software. Successfully rolled out to 80 branches.', tags:['.NET','SQL Server','Logo'], hasLink:false},
+        {name:'CGV Film Programming', date:'Nov 2023', desc:'A session-management system that streamlines film programming for cinemas; I built features to optimise the planning team’s workflow.', tags:['.NET Core','T-SQL'], hasLink:false},
+        {name:'Enterprise Rent A Car', date:'2021 — 2023', desc:'Backend developer for rental reservations, fleet management and campaign configuration.', tags:['ASP.NET Core','EF Core','Redis','RabbitMQ'], hasLink:true, link:'https://www.enterprise.com.tr', linkLabel:'Open site'},
+        {name:'Alamo Rent A Car', date:'2021 — 2023', desc:'End-to-end development on the car-rental platform at Nexum; reservations and fleet management.', tags:['ASP.NET Core','EF Core','T-SQL'], hasLink:true, link:'https://www.alamo.com.tr', linkLabel:'Open site'},
+        {name:'Tavuk Dünyası', date:'2021 — 2023', desc:'End-to-end development on the sefteniste.com ordering and campaign platform.', tags:['ASP.NET Core','C#','T-SQL'], hasLink:true, link:'https://www.sefteniste.com', linkLabel:'Open site'},
+        {name:'Twitburc', date:'2021 — 2023', desc:'Web application development and maintenance for twitburc.com.tr.', tags:['ASP.NET MVC','C#','jQuery'], hasLink:true, link:'https://www.twitburc.com.tr', linkLabel:'Open site'},
+      ],
+      skillGroups:[
+        {label:'Languages', items:['C#','JavaScript','T-SQL','HTML','CSS']},
+        {label:'Backend & Frameworks', items:['.NET / .NET Core','ASP.NET MVC','ASP.NET Web API','Entity Framework Core','ABP Framework']},
+        {label:'Architecture', items:['OOP','SOLID','DDD','CQRS','RESTful','Microservices']},
+        {label:'Data & Messaging', items:['MS SQL Server','Redis','RabbitMQ','SOAP']},
+        {label:'Tools & Process', items:['Git / GitHub','TFS','ClickUp','Scrum / Agile']},
+      ],
+      edu:[
+        {school:'Anadolu University', dept:'Management Information Systems — Open Education', degree:'Bachelor', period:'Oct 2020 — Present'},
+        {school:'Abant İzzet Baysal University', dept:'Computer Programming — Gerede Vocational School', degree:'Associate', period:'Oct 2016 — Sep 2018'},
+      ],
+      langs:[{name:'Turkish', level:'Native', pct:100},{name:'English', level:'Intermediate', pct:55}],
+      certs:[{name:'Agile Scrum Workshop Program', meta:'Workshop Program'},{name:'Bilge Adam Software Course Certificate of Participation', meta:'Bilge Adam · Jan 2020'}],
+      hobbies:[
+        {icon:'fitness_center', label:'Fitness', desc:'Regular training and healthy living.'},
+        {icon:'forest', label:'Hiking', desc:'Long walks in nature on weekends.'},
+        {icon:'menu_book', label:'Personal-development books', desc:'Continuous learning and reading.'},
+      ],
+      welcome:'PortfolioOS — developer terminal. Type `help` for commands.',
+    },
+  };
+
+  componentDidMount() {
+    const saved = this.restore();
+    let wins = {}, zTop = 10, lang = 'tr', focused = null;
+    let wall = this.props.wallpaper || 'sunset', accent = this.props.accent || '#2a6fdb', dockSize = this.props.dockSize || 'medium';
+    const vw = window.innerWidth || 1280, vh = window.innerHeight || 800;
+    if (saved) {
+      if (saved.lang === 'tr' || saved.lang === 'en') lang = saved.lang;
+      if (saved.wall) wall = saved.wall;
+      if (saved.accent) accent = saved.accent;
+      if (saved.dockSize) dockSize = saved.dockSize;
+      if (saved.open) Object.keys(saved.open).forEach(id => {
+        if (!this.APPS[id]) return;
+        const o = saved.open[id]; zTop++;
+        wins[id] = { open:true, min:!!o.min, max:!!o.max, z:zTop,
+          x: Math.max(0, Math.min(o.x|0, vw-120)), y: Math.max(30, Math.min(o.y|0, vh-80)),
+          w: o.w || this.APPS[id].w, h: o.h || this.APPS[id].h };
+        focused = id;
+      });
+    }
+    this.setState({ wins, zTop, lang, focused, wall, accent, dockSize, term:{ lines:[{text:this.D[lang].welcome, color:'#9aa6b8', prompt:false}], input:'' } });
+    this.tick(); this._iv = setInterval(() => this.tick(), 10000);
+    this._rz = () => this.forceUpdate(); window.addEventListener('resize', this._rz);
+    this._onDown = (e) => {
+      const t = e.target; if (!t || !t.closest) return;
+      if (t.closest('button')) return;
+      const rz = t.closest('[data-rz]');
+      if (rz) { this.startResize(rz.getAttribute('data-rz'), rz.getAttribute('data-dir'), e); return; }
+      const dr = t.closest('[data-drag]');
+      if (dr) { this.startDrag(dr.getAttribute('data-drag'), e); return; }
+      const fo = t.closest('[data-win]');
+      if (fo) this.focusApp(fo.getAttribute('data-win'));
+    };
+    document.addEventListener('pointerdown', this._onDown);
+    this._onKey = (e) => { const t = e.target; if (e.key === 'Enter' && t && t.getAttribute && t.getAttribute('data-term')) this.termSubmit(); };
+    document.addEventListener('keydown', this._onKey);
+    const anyOpen = Object.keys(wins).some(id => wins[id] && wins[id].open);
+    if (!anyOpen) this.openApp('about');
+    const pb = document.getElementById('preboot');
+    if (pb) this.waitAssets(pb);
+  }
+  waitAssets(pb) {
+    const start = Date.now(), minMs = 2100;
+    const finish = () => { const wait = Math.max(0, minMs - (Date.now() - start)); setTimeout(() => this.fadeSplash(pb), wait); };
+    const fontJobs = [];
+    try {
+      if (document.fonts && document.fonts.load) {
+        fontJobs.push(document.fonts.load("500 24px 'Material Symbols Rounded'", 'person'));
+        fontJobs.push(document.fonts.load("700 24px 'Plus Jakarta Sans'"));
+        fontJobs.push(document.fonts.load("500 14px 'JetBrains Mono'"));
+      }
+    } catch (e) {}
+    const imgJob = new Promise(res => { const im = new Image(); im.onload = res; im.onerror = res; im.src = 'assets/avatar.jpg'; });
+    const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+    let done = false; const once = () => { if (done) return; done = true; finish(); };
+    Promise.all([fontsReady, Promise.all(fontJobs), imgJob]).then(once).catch(once);
+    setTimeout(once, 6000); // safety cap — never hang
+  }
+  componentWillUnmount() { clearInterval(this._iv); clearTimeout(this._b1); clearTimeout(this._b2); window.removeEventListener('resize', this._rz); document.removeEventListener('pointerdown', this._onDown); document.removeEventListener('keydown', this._onKey); }
+
+  tick() {
+    const d = new Date(), L = this.state.lang;
+    const gT = ['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'], gE = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const aT = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'], aE = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const g = (L==='tr'?gT:gE)[d.getDay()], a = (L==='tr'?aT:aE)[d.getMonth()];
+    const hh = String(d.getHours()).padStart(2,'0'), mm = String(d.getMinutes()).padStart(2,'0');
+    this.setState({ clock: g + ' ' + d.getDate() + ' ' + a + '  ' + hh + ':' + mm });
+  }
+
+  restore() { try { return JSON.parse(localStorage.getItem('portfolioos.v1') || 'null'); } catch(e) { return null; } }
+  persist() { try { const open = {}; Object.keys(this.state.wins).forEach(id => { const w = this.state.wins[id]; if (w && w.open) open[id] = {x:w.x,y:w.y,w:w.w,h:w.h,max:!!w.max,min:!!w.min}; }); localStorage.setItem('portfolioos.v1', JSON.stringify({ lang:this.state.lang, wall:this.state.wall, accent:this.state.accent, dockSize:this.state.dockSize, open })); } catch(e) {} }
+
+  setLang(l) { this.setState({ lang:l }, () => { this.tick(); this.persist(); }); }
+
+  openMenu(id, e) { const x = (e && e.currentTarget) ? e.currentTarget.getBoundingClientRect().left : 8; const vw = window.innerWidth || 1280; const left = Math.max(6, Math.min(x, vw - 290)); this.setState(s => ({ menuOpen: s.menuOpen === id ? null : id, menuLeft: left, gamesOpen:false })); }
+  hoverMenu(id, e) { if (this.state.menuOpen && this.state.menuOpen !== id) { const x = e.currentTarget.getBoundingClientRect().left; const vw = window.innerWidth || 1280; this.setState({ menuOpen:id, menuLeft: Math.max(6, Math.min(x, vw - 290)) }); } }
+  closeMenu() { this.setState({ menuOpen:null }); }
+  toggleGames() { this.setState(s => ({ gamesOpen: !s.gamesOpen, menuOpen:null })); }
+  closeGames() { this.setState({ gamesOpen:false }); }
+  showToast(t) { this.setState({ toast:t }); clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toast:'' }), 1800); }
+  copyText(t, label) { try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t); else { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } } catch(e) {} this.showToast(label); }
+  downloadCV() { if (this._cv) this._cv.click(); }
+  openUrl(u) { window.open(u, '_blank', 'noopener'); }
+  minAll() { this.setState(s => { const wins = {...s.wins}; Object.keys(wins).forEach(k => { if (wins[k].open) wins[k] = {...wins[k], min:true}; }); return { wins, focused:null }; }); }
+  closeAll() { this.setState(s => { const wins = {...s.wins}; Object.keys(wins).forEach(k => { wins[k] = {...wins[k], open:false}; }); return { wins, focused:null }; }, () => this.persist()); }
+  buildSplash() { const d = document.createElement('div'); d.className = 'ak-splash'; d.innerHTML = '<div class="ak-splash-in"><div class="ak-splash-title">Hi, I\'m Abdullah <span>👋</span></div><div class="ak-splash-sub">Yazılım Geliştirici · Software Developer</div><div class="ak-splash-bar"><i></i></div></div>'; document.body.appendChild(d); return d; }
+  fadeSplash(el) { if (!el) return; const bar = el.querySelector('.ak-splash-bar i'); if (bar) { bar.style.transition = 'width .32s ease'; bar.style.width = '100%'; } setTimeout(() => { el.style.opacity = '0'; setTimeout(() => { if (el && el.parentNode) el.parentNode.removeChild(el); }, 620); }, 340); }
+  restart() { this.setState({ menuOpen:null }); this.setState(s => { const wins = {...s.wins}; Object.keys(wins).forEach(k => { wins[k] = {...wins[k], open:false}; }); return { wins, focused:null }; }); const sp = this.buildSplash(); setTimeout(() => { this.openApp('about'); this.fadeSplash(sp); }, 950); }
+  setWall(w) { this.setState({ wall:w }, () => this.persist()); }
+  setAccent(a) { this.setState({ accent:a }, () => this.persist()); }
+  setDock(d) { this.setState({ dockSize:d }, () => this.persist()); }
+
+  openApp(id) {
+    if (!this.APPS[id]) return;
+    this.setState(s => {
+      const wins = {...s.wins}; const z = s.zTop + 1; const A = this.APPS[id];
+      if (wins[id] && wins[id].open) { wins[id] = {...wins[id], min:false, z}; }
+      else {
+        const n = Object.keys(wins).filter(k => wins[k] && wins[k].open).length;
+        const vw = window.innerWidth || 1280, vh = window.innerHeight || 800;
+        wins[id] = { open:true, min:false, max:false, z,
+          x: Math.max(12, Math.min(150 + n*28, vw - A.w - 30)),
+          y: Math.max(44, Math.min(60 + n*26, vh - A.h - 80)),
+          w: A.w, h: A.h };
+      }
+      return { wins, zTop:z, focused:id, bounce:id };
+    }, () => { this.persist(); setTimeout(() => { if (this.state.bounce === id) this.setState({ bounce:null }); }, 680); });
+  }
+  closeApp(id) { this.setState(s => { const wins = {...s.wins, [id]:{...s.wins[id], open:false}}; let f=null,mz=-1; Object.keys(wins).forEach(k => { if (wins[k].open && !wins[k].min && wins[k].z>mz){mz=wins[k].z;f=k;} }); return { wins, focused:f }; }, () => this.persist()); }
+  minApp(id) { this.setState(s => { const wins = {...s.wins, [id]:{...s.wins[id], min:true}}; let f=null,mz=-1; Object.keys(wins).forEach(k => { if (wins[k].open && !wins[k].min && wins[k].z>mz){mz=wins[k].z;f=k;} }); return { wins, focused:f }; }); }
+  maxApp(id) { this.setState(s => ({ wins:{...s.wins, [id]:{...s.wins[id], max:!s.wins[id].max, z:s.zTop+1}}, zTop:s.zTop+1, focused:id }), () => this.persist()); }
+  focusApp(id) { this.setState(s => { if (!s.wins[id] || !s.wins[id].open) return null; if (s.focused === id && s.wins[id].z === s.zTop) return null; return { wins:{...s.wins, [id]:{...s.wins[id], z:s.zTop+1}}, zTop:s.zTop+1, focused:id }; }); }
+
+  startDrag(id, e) {
+    const w = this.state.wins[id]; if (!w || w.max) return;
+    this.focusApp(id);
+    e.preventDefault();
+    const sx = e.clientX, sy = e.clientY, ox = w.x, oy = w.y;
+    const move = (ev) => {
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const nx = Math.max(0, Math.min(ox + ev.clientX - sx, vw - 90));
+      const ny = Math.max(31, Math.min(oy + ev.clientY - sy, vh - 56));
+      this.setState(s => { const cur = s.wins[id]; if (!cur) return null; return { wins:{...s.wins, [id]:{...cur, x:nx, y:ny}} }; });
+    };
+    const up = () => { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); this.persist(); };
+    document.addEventListener('pointermove', move); document.addEventListener('pointerup', up);
+  }
+
+  startResize(id, dir, e) {
+    const w = this.state.wins[id]; if (!w || w.max) return;
+    e.preventDefault(); e.stopPropagation(); this.focusApp(id);
+    const sx = e.clientX, sy = e.clientY, ox = w.x, oy = w.y, ow = w.w, oh = w.h;
+    const minW = 320, minH = 200, vw = window.innerWidth, vh = window.innerHeight;
+    const move = (ev) => {
+      let nx = ox, ny = oy, nw = ow, nh = oh;
+      const dx = ev.clientX - sx, dy = ev.clientY - sy;
+      if (dir.indexOf('e') >= 0) nw = ow + dx;
+      if (dir.indexOf('s') >= 0) nh = oh + dy;
+      if (dir.indexOf('w') >= 0) { nw = ow - dx; nx = ox + dx; }
+      if (dir.indexOf('n') >= 0) { nh = oh - dy; ny = oy + dy; }
+      if (nw < minW) { if (dir.indexOf('w') >= 0) nx = ox + (ow - minW); nw = minW; }
+      if (nh < minH) { if (dir.indexOf('n') >= 0) ny = oy + (oh - minH); nh = minH; }
+      nx = Math.max(0, nx); ny = Math.max(31, ny);
+      nw = Math.min(nw, vw - nx - 4); nh = Math.min(nh, vh - ny - 4);
+      this.setState(s => { const cur = s.wins[id]; if (!cur) return null; return { wins:{...s.wins, [id]:{...cur, x:nx, y:ny, w:nw, h:nh}} }; });
+    };
+    const up = () => { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); this.persist(); };
+    document.addEventListener('pointermove', move); document.addEventListener('pointerup', up);
+  }
+
+  onC(field, e) { const v = e.target.value; this.setState(s => ({ contact:{...s.contact, [field]:v, err:'', sent:false} })); }
+  sendContact() { const c = this.state.contact, ui = this.D[this.state.lang].ui; let err='';
+    if (!c.name.trim()) err = ui.errName; else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c.email)) err = ui.errEmail; else if (!c.msg.trim()) err = ui.errMsg;
+    if (err) { this.setState({ contact:{...c, err} }); return; }
+    this.setState({ contact:{...c, sent:true, err:''} });
+  }
+  resetContact() { this.setState({ contact:{name:'',email:'',msg:'',err:'',sent:false} }); }
+
+  scrollTerm() { if (this._term) this._term.scrollTop = this._term.scrollHeight; }
+  termSubmit() {
+    const raw = this.state.term.input.trim(); if (!raw) return;
+    const low = raw.toLowerCase();
+    if (low === 'clear' || low === 'temizle') { this.setState({ term:{ lines:[], input:'' } }); return; }
+    const lines = this.state.term.lines.slice();
+    lines.push({ text:raw, color:'#ffffff', prompt:true });
+    this.runCmd(low).forEach(o => lines.push(o));
+    this.setState({ term:{ lines, input:'' } }, () => this.scrollTerm());
+  }
+  runCmd(cmd) {
+    const L = this.state.lang, d = this.D[L], out = [];
+    const add = (t, c) => out.push({ text:t, color:c || '#cfd5e2', prompt:false });
+    const parts = cmd.split(/\s+/), c0 = parts[0];
+    const map = {hakkimda:'about',about:'about',deneyim:'exp',experience:'exp',projeler:'projects',projects:'projects',yetenekler:'skills',skills:'skills',egitim:'edu',education:'edu',sertifika:'certs',sertifikalar:'certs',certificates:'certs',hobi:'hobbies',hobiler:'hobbies',hobbies:'hobbies',iletisim:'contact',contact:'contact',cv:'cv',terminal:'terminal'};
+    if (c0==='help'||c0==='yardim'||c0==='yardım') { add(L==='tr'?'Komutlar:':'Commands:', '#ffd29a'); add('whoami · about · experience · projects · skills · education · certificates · contact · social · open <app> · ls · clear'); return out; }
+    if (c0==='whoami') { add('Abdullah Karagöz — ' + d.role, '#ffffff'); return out; }
+    if (c0==='ls') { add('about  experience  projects  skills  education  certificates  hobbies  contact  cv', '#61afef'); return out; }
+    if (c0==='date'||c0==='tarih') { add(this.state.clock); return out; }
+    if (c0==='social') { add('linkedin.com/in/abdullahkaragoz','#61afef'); add('github.com/abdullahkaragoz','#61afef'); add('medium.com/@abdullahkaragoz','#61afef'); add('abdullahkaragoz.dev','#61afef'); return out; }
+    if (c0==='about'||c0==='hakkimda'||c0==='hakkımda') { add(d.summary); return out; }
+    if (c0==='experience'||c0==='deneyim') { d.exp.forEach(e => add(e.period + '  ' + e.company + ' — ' + e.role, '#e5c07b')); return out; }
+    if (c0==='projects'||c0==='projeler') { d.projects.forEach(p => add('• ' + p.name + ' (' + p.date + ')')); return out; }
+    if (c0==='skills'||c0==='yetenekler') { d.skillGroups.forEach(g => add(g.label + ': ' + g.items.join(', '))); return out; }
+    if (c0==='education'||c0==='egitim'||c0==='eğitim') { d.edu.forEach(e => add(e.school + ' — ' + e.degree)); return out; }
+    if (c0==='certificates'||c0==='sertifika'||c0==='sertifikalar') { d.certs.forEach(c => add(c.name + ' (' + c.date + ')')); return out; }
+    if (c0==='contact'||c0==='iletisim'||c0==='iletişim') { add('abdullah.karagoz@outlook.com','#61afef'); add('+90 535 055 45 79'); return out; }
+    if (c0==='open') { const t = map[parts[1]]; if (t) { this.openApp(t); add((L==='tr'?'Açılıyor: ':'Opening: ') + parts[1], '#27d07e'); } else add((L==='tr'?'Bilinmeyen uygulama: ':'Unknown app: ') + (parts[1]||''), '#ff6b6b'); return out; }
+    if (c0==='sudo') { add(L==='tr'?'Güzel deneme — yetki reddedildi.':'Nice try — permission denied.', '#ff6b6b'); return out; }
+    add((L==='tr'?'komut bulunamadı: ':'command not found: ') + cmd + '  —  `help`', '#ff6b6b'); return out;
+  }
+
+  renderVals() {
+    const s = this.state, L = s.lang, d = this.D[L], A = this.APPS;
+    const vw = window.innerWidth || 1280, vh = window.innerHeight || 800;
+    const ids = ['about','exp','projects','skills','edu','certs','hobbies','contact','cv','terminal','game','road','mines','duck','g2048','radio'];
+    const allWins = ids.map(id => {
+      const w = s.wins[id] || {open:false,min:false,max:false,z:0,x:160,y:64,w:A[id].w,h:A[id].h};
+      const geo = w.max ? {x:8,y:34,w:vw-16,h:vh-118} : {x:w.x,y:w.y,w:w.w,h:w.h};
+      return { id, title:A[id].title[L], z:w.z||1, x:geo.x, y:geo.y, w:geo.w, h:geo.h,
+        disp:(w.open && !w.min) ? 'flex' : 'none',
+        isAbout:id==='about', isExp:id==='exp', isProjects:id==='projects', isSkills:id==='skills', isEdu:id==='edu', isCerts:id==='certs', isHobbies:id==='hobbies', isContact:id==='contact', isCv:id==='cv', isTerminal:id==='terminal', isGame:id==='game', isRoad:id==='road', isMines:id==='mines', isDuck:id==='duck', isG2048:id==='g2048', isRadio:id==='radio',
+        anim:(s.bounce===id) ? 'winpop .26s cubic-bezier(.2,.85,.3,1)' : 'none',
+        onFocus:() => this.focusApp(id), onTitleDown:(e) => this.startDrag(id, e), onClose:() => this.closeApp(id), onMin:() => this.minApp(id), onMax:() => this.maxApp(id),
+        rzN:(e)=>this.startResize(id,'n',e), rzS:(e)=>this.startResize(id,'s',e), rzW:(e)=>this.startResize(id,'w',e), rzE:(e)=>this.startResize(id,'e',e), rzNW:(e)=>this.startResize(id,'nw',e), rzNE:(e)=>this.startResize(id,'ne',e), rzSW:(e)=>this.startResize(id,'sw',e), rzSE:(e)=>this.startResize(id,'se',e) };
+    });
+    const gameIds = ['game','road','mines','duck','g2048'];
+    const dock = ids.filter(id => gameIds.indexOf(id) < 0).map(id => ({ id, isApp:true, isFolder:false, title:A[id].title[L], icon:A[id].icon, grad:A[id].grad,
+      dot:(s.wins[id] && s.wins[id].open) ? 'rgba(255,255,255,.85)' : 'transparent',
+      bounce:(s.bounce===id) ? 'dockbounce .68s ease' : 'none', onClick:() => this.openApp(id) }));
+    const anyGameOpen = gameIds.some(id => s.wins[id] && s.wins[id].open);
+    dock.push({ id:'__games', isApp:false, isFolder:true, title:(L==='tr'?'Oyunlar':'Games'), icon:'sports_esports', grad:'linear-gradient(160deg,#00ffd5,#ff2e88)',
+      minis: gameIds.slice(0, 4).map(id => ({ grad:A[id].grad, icon:A[id].icon })),
+      dot: anyGameOpen ? 'rgba(255,255,255,.85)' : 'transparent',
+      bounce:(s.bounce==='__games') ? 'dockbounce .68s ease' : 'none', onClick:() => this.toggleGames() });
+    const navItems = ['about','exp','projects','skills','edu','certs','hobbies','contact','cv'].map(id => ({
+      id, label:A[id].title[L], icon:A[id].icon, bg:(id==='about')?'var(--accent,#2a6fdb)':'transparent', op:(id==='about')?'1':'.8', onClick:() => this.openApp(id) }));
+    const focusedTitle = (s.focused && s.wins[s.focused] && s.wins[s.focused].open && !s.wins[s.focused].min) ? A[s.focused].title[L] : (L==='tr'?'Masaüstü':'Desktop');
+    const walls = {
+      sunset:'radial-gradient(34% 24% at 75% 80%,rgba(255,237,201,.55),rgba(255,237,201,0) 70%),radial-gradient(150% 120% at 80% 122%,#ffd9a6 0%,#ff9f6b 18%,#f76e8f 38%,#c44f95 56%,#6f3c92 76%,#2a1a46 100%)',
+      cool:'radial-gradient(140% 120% at 78% 120%,#8aa0ff 0%,#6b7bff 22%,#7a5bff 45%,#5b3aa0 70%,#1f1740 100%)',
+      teal:'radial-gradient(140% 120% at 78% 120%,#7fe6d6 0%,#2fb6c9 28%,#2a7fdb 52%,#2a4a9a 74%,#141f3a 100%)',
+      graphite:'radial-gradient(140% 120% at 78% 120%,#c7ccd8 0%,#9aa1b2 30%,#5c6275 60%,#2c303c 100%)',
+      night:'radial-gradient(40% 30% at 75% 18%,rgba(140,150,255,.25),transparent 70%),radial-gradient(140% 120% at 50% 120%,#3a3470 0%,#241a52 40%,#0e1030 100%)',
+    };
+    const wp = s.wall || this.props.wallpaper || 'sunset';
+    const acc = s.accent || this.props.accent || '#2a6fdb';
+    const dz = s.dockSize || this.props.dockSize || 'medium';
+    const dsz = ({small:'42px',medium:'50px',large:'60px'})[dz] || '50px';
+    const trL = L === 'tr'; const W = (a,b) => trL ? a : b;
+    const close = (fn) => () => { if (fn) fn(); this.setState({ menuOpen:null }); };
+    const mItem = (label, icon, fn, checked) => ({ isItem:true, isSep:false, isHeader:false, isInfo:false, isSwatch:false, label, icon:icon||'', onClick:close(fn), checkOp: checked ? 1 : 0 });
+    const mSep = () => ({ isItem:false, isSep:true, isHeader:false, isInfo:false, isSwatch:false });
+    const mHead = (label) => ({ isItem:false, isSep:false, isHeader:true, isInfo:false, isSwatch:false, label });
+    const mInfo = (label, icon) => ({ isItem:false, isSep:false, isHeader:false, isInfo:true, isSwatch:false, label, icon:icon||'' });
+    const accentList = ['#2a6fdb','#6b5bff','#1f9e8f','#e8743b','#52525b'];
+    const mSwatch = { isItem:false, isSep:false, isHeader:false, isInfo:false, isSwatch:true, swatches: accentList.map(c => ({ color:c, title:c, ring:(c===acc?'2px':'0px'), onClick:close(() => this.setAccent(c)) })) };
+    const menus = {
+      ak:[ mItem(W('Bu Site Hakkında','About This Site'),'info',()=>this.openApp('about')), mSep(), mItem(W('CV’yi İndir (PDF)','Download CV (PDF)'),'download',()=>this.downloadCV()), mSep(), mItem(W('Tüm Pencereleri Küçült','Minimize All'),'remove',()=>this.minAll()), mItem(W('Tüm Pencereleri Kapat','Close All Windows'),'close',()=>this.closeAll()), mSep(), mItem(W('Yeniden Başlat','Restart'),'restart_alt',()=>this.restart()) ],
+      file:[ mItem(W('CV’yi Aç','Open CV'),'description',()=>this.openApp('cv')), mItem(W('CV’yi İndir','Download CV'),'download',()=>this.downloadCV()), mSep(), mItem(W('Projeler','Projects'),'folder_open',()=>this.openApp('projects')), mItem(W('İletişim','Contact'),'mail',()=>this.openApp('contact')) ],
+      edit:[ mItem(W('E-posta Adresini Kopyala','Copy Email'),'content_copy',()=>this.copyText('abdullah.karagoz@outlook.com',W('E-posta kopyalandı','Email copied'))), mItem(W('Telefonu Kopyala','Copy Phone'),'content_copy',()=>this.copyText('+90 535 055 45 79',W('Telefon kopyalandı','Phone copied'))), mSep(), mHead(W('Dil','Language')), mItem('Türkçe','',()=>this.setLang('tr'),L==='tr'), mItem('English','',()=>this.setLang('en'),L==='en') ],
+      view:[ mHead(W('Duvar Kâğıdı','Wallpaper')), mItem(W('Günbatımı','Sunset'),'',()=>this.setWall('sunset'),wp==='sunset'), mItem(W('Serin','Cool'),'',()=>this.setWall('cool'),wp==='cool'), mItem(W('Turkuaz','Teal'),'',()=>this.setWall('teal'),wp==='teal'), mItem(W('Grafit','Graphite'),'',()=>this.setWall('graphite'),wp==='graphite'), mItem(W('Gece','Night'),'',()=>this.setWall('night'),wp==='night'), mSep(), mHead(W('Vurgu Rengi','Accent Color')), mSwatch, mSep(), mHead(W('Dock Boyutu','Dock Size')), mItem(W('Küçük','Small'),'',()=>this.setDock('small'),dz==='small'), mItem(W('Orta','Medium'),'',()=>this.setDock('medium'),dz==='medium'), mItem(W('Büyük','Large'),'',()=>this.setDock('large'),dz==='large') ],
+      help:[ mItem(W('Terminal’i Aç','Open Terminal'),'terminal',()=>this.openApp('terminal')), mItem(W('Komut İpuçları','Command Tips'),'help',()=>this.openApp('terminal')), mSep(), mItem('LinkedIn','link',()=>this.openUrl('https://www.linkedin.com/in/abdullahkaragoz')), mItem('GitHub','code',()=>this.openUrl('https://github.com/abdullahkaragoz')), mItem(W('Web Sitesi','Website'),'language',()=>this.openUrl('https://abdullahkaragoz.dev')) ],
+      search:[ mHead(W('Uygulamalar','Apps')) ].concat(ids.map(id => mItem(A[id].title[L], A[id].icon, ()=>this.openApp(id)))),
+      wifi:[ mHead('Wi-Fi'), mInfo('PortfolioOS_5GHz','wifi'), mInfo(W('Bağlı','Connected'),'check_circle') ],
+      battery:[ mHead(W('Pil','Battery')), mInfo('100% · '+W('Şarjda','Charging'),'battery_charging_full') ],
+      clock:[ mHead(W('Tarih & Saat','Date & Time')), mInfo(s.clock||'','schedule') ],
+    };
+    const winItems = [];
+    ids.forEach(id => { if (s.wins[id] && s.wins[id].open) winItems.push(mItem(A[id].title[L], A[id].icon, ()=>this.openApp(id), s.focused===id && !s.wins[id].min)); });
+    if (winItems.length === 0) winItems.push(mInfo(W('Açık pencere yok','No open windows'),'web_asset'));
+    winItems.push(mSep(), mItem(W('Tümünü Küçült','Minimize All'),'remove',()=>this.minAll()), mItem(W('Tümünü Kapat','Close All'),'close',()=>this.closeAll()));
+    menus.window = winItems;
+    menus.app = (s.focused && s.wins[s.focused] && s.wins[s.focused].open && !s.wins[s.focused].min)
+      ? [ mHead(A[s.focused].title[L]), mItem(W('Küçült','Minimize'),'remove',()=>this.minApp(s.focused)), mItem(W('Büyüt / Geri Al','Zoom'),'crop_square',()=>this.maxApp(s.focused)), mSep(), mItem(W('Kapat','Close'),'close',()=>this.closeApp(s.focused)) ]
+      : [ mInfo(W('Masaüstü','Desktop'),'desktop_windows'), mItem(W('Hakkımda’yı aç','Open About'),'person',()=>this.openApp('about')) ];
+    const trigBg = (id) => s.menuOpen===id ? 'rgba(255,255,255,.16)' : 'transparent';
+    const menuTriggers = [['file',d.ui.menu[0]],['edit',d.ui.menu[1]],['view',d.ui.menu[2]],['window',d.ui.menu[3]],['help',d.ui.menu[4]]].map(([id,label]) => ({ id, label, bg:trigBg(id), onClick:(e)=>this.openMenu(id,e), onHover:(e)=>this.hoverMenu(id,e) }));
+    return {
+      showBoot:!s.bootGone, bootFade:s.booting ? 1 : 0,
+      isTr:L==='tr', isEn:L==='en', clock:s.clock || '', menubarTitle:focusedTitle, menu:d.ui.menu,
+      accentVar:acc, wallVar:walls[wp] || walls.sunset, dockVar:dsz,
+      menuOpen:s.menuOpen, menuLeft:s.menuLeft, menuItems:(menus[s.menuOpen] || []), menuTriggers, closeMenu:()=>this.closeMenu(), toast:s.toast, cvRef:(el)=>{ this._cv = el; },
+      akBg:trigBg('ak'), appBg:trigBg('app'), akClick:(e)=>this.openMenu('ak',e), akHover:(e)=>this.hoverMenu('ak',e), appClick:(e)=>this.openMenu('app',e), appHover:(e)=>this.hoverMenu('app',e),
+      searchClick:(e)=>this.openMenu('search',e), searchBg:trigBg('search'), wifiClick:(e)=>this.openMenu('wifi',e), wifiBg:trigBg('wifi'), batteryClick:(e)=>this.openMenu('battery',e), batteryBg:trigBg('battery'), clockClick:(e)=>this.openMenu('clock',e),
+      profile:{ name:'Abdullah Karagöz', role:d.role, loc:d.loc, born:'1994', email:'abdullah.karagoz@outlook.com', phone:'+90 535 055 45 79' },
+      summary:d.summary,
+      social:[ {label:'LinkedIn',url:'https://www.linkedin.com/in/abdullahkaragoz',icon:'link',bg:'var(--accent,#2a6fdb)'}, {label:'GitHub',url:'https://github.com/abdullahkaragoz',icon:'code',bg:'rgba(255,255,255,.1)'}, {label:'Medium',url:'https://medium.com/@abdullahkaragoz',icon:'article',bg:'rgba(255,255,255,.1)'}, {label:'Website',url:'https://abdullahkaragoz.dev',icon:'language',bg:'rgba(255,255,255,.1)'} ],
+      exp:d.exp, projects:d.projects, skillGroups:d.skillGroups, edu:d.edu, langs:d.langs, certs:d.certs, hobbies:d.hobbies, ui:d.ui,
+      navItems, dock, allWins,
+      gamesOpen:s.gamesOpen, closeGames:()=>this.closeGames(), gamesTitle:(L==='tr'?'Oyunlar':'Games'),
+      games: gameIds.map(id => ({ id, title:A[id].title[L], icon:A[id].icon, grad:A[id].grad, open:(s.wins[id] && s.wins[id].open), onClick:()=>{ this.openApp(id); this.closeGames(); } })),
+      contact:s.contact, notSent:!s.contact.sent, term:s.term,
+      stop:(e) => e.stopPropagation(),
+      onName:(e) => this.onC('name', e), onEmail:(e) => this.onC('email', e), onMsg:(e) => this.onC('msg', e),
+      sendContact:() => this.sendContact(), resetContact:() => this.resetContact(),
+      onTermInput:(e) => { const v = e.target.value; this.setState(st => ({ term:{...st.term, input:v} })); },
+      onTermKey:(e) => { if (e.key === 'Enter') this.termSubmit(); },
+      termRef:(el) => { this._term = el; },
+      setTr:() => this.setLang('tr'), setEn:() => this.setLang('en'),
+    };
+  }
+}
+</script>
+</body>
+</html>

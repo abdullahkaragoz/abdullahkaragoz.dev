@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Duck Hunt</title>
+<style>
+  :root { --ink:#e8e8e8; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: radial-gradient(circle at 50% 0%, #232531 0%, #14141a 70%);
+    color: var(--ink);
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    -webkit-user-select: none; user-select: none;
+  }
+  #wrap {
+    min-height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 12px; padding: 16px;
+  }
+  #stage {
+    position: relative;
+    line-height: 0;
+    width: min(94vw, 900px);
+    aspect-ratio: 256 / 240;
+    box-shadow: 0 12px 48px rgba(0,0,0,.6);
+    border-radius: 8px; overflow: hidden;
+    background: #0a0a0d;
+  }
+  #stage:fullscreen { width: 100vw; height: 100vh; aspect-ratio: auto; border-radius: 0; }
+  #stage:-webkit-full-screen { width: 100vw; height: 100vh; border-radius: 0; }
+  canvas#game {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: #0a0a0d;
+    cursor: none;
+    touch-action: none;
+  }
+  #hint {
+    max-width: min(94vw, 900px);
+    font-size: 13px; line-height: 1.5;
+    color: #9aa0ad; text-align: center;
+  }
+  #hint b { color: #cfd3da; }
+  #fs {
+    background: #2a2a35; color: #cfd3da; border: 1px solid #3a3a48;
+    border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer;
+  }
+  #fs:hover { background: #343444; }
+</style>
+</head>
+<body>
+  <div id="wrap">
+    <div id="stage">
+      <canvas id="game" width="256" height="240"></canvas>
+    </div>
+    <div id="hint">
+      Fareyle nişan alın, <b>tıklayarak</b> ateş edin. Menüde <b>A</b> (tek ördek) ya da
+      <b>B</b> (çift ördek) modunu seçin &nbsp;·&nbsp; <b>S</b>: sesi aç/kapat &nbsp;·&nbsp; <b>P</b>: duraklat
+    </div>
+    <button id="fs">Tam ekran</button>
+  </div>
+
+<script>
+"use strict";
+(function () {
+  const canvas = document.getElementById("game");
+  const stage = document.getElementById("stage");
+  const ctx = canvas.getContext("2d", { alpha: false });
+
+  const W = 256, H = 240;
+  const view = { s: 1, ox: 0, oy: 0 };
+  const GRASS_Y = 176;     // çimen çizgisi
+  const HUD_Y = 200;       // alttaki skor barı
+  const DUCK_MIN_Y = 12;
+  const DUCK_MAX_Y = 150;  // çalıların hemen üstü
+  const SPAWN_Y = 158;
+
+  // ---------- Yardımcılar ----------
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const randi = (a, b) => Math.floor(rand(a, b + 1));
+  const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+  const choice = arr => arr[randi(0, arr.length - 1)];
+
+  // ---------- Ses (Web Audio, 8-bit tarzı) ----------
+  const Sound = (function () {
+    let ac = null, master = null;
+    let enabled = true;
+    function ensure() {
+      if (!ac) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) { enabled = false; return; }
+        ac = new AC();
+        master = ac.createGain();
+        master.gain.value = 0.22;
+        master.connect(ac.destination);
+      }
+      if (ac.state === "suspended") ac.resume();
+    }
+    function tone(freq, dur, type, t0, vol, slideTo) {
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = type || "square";
+      o.frequency.setValueAtTime(freq, t0);
+      if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(1, slideTo), t0 + dur);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol == null ? 0.6 : vol, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(master);
+      o.start(t0); o.stop(t0 + dur + 0.02);
+    }
+    function noise(dur, t0, vol) {
+      const n = Math.floor(ac.sampleRate * dur);
+      const buf = ac.createBuffer(1, n, ac.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+      const src = ac.createBufferSource(); src.buffer = buf;
+      const g = ac.createGain(); g.gain.value = vol == null ? 0.5 : vol;
+      const f = ac.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 800;
+      src.connect(f); f.connect(g); g.connect(master);
+      src.start(t0);
+    }
+    return {
+      get enabled() { return enabled; },
+      toggle() { enabled = !enabled; if (enabled) ensure(); return enabled; },
+      unlock() { ensure(); },
+      shot() { if (!enabled || !ac) return; const t = ac.currentTime; noise(0.12, t, 0.7); tone(180, 0.1, "square", t, 0.4, 60); },
+      quack() { if (!enabled || !ac) return; const t = ac.currentTime;
+        tone(620, 0.07, "square", t, 0.4, 500); tone(500, 0.07, "square", t + 0.08, 0.4, 380); },
+      hit() { if (!enabled || !ac) return; const t = ac.currentTime; tone(880, 0.08, "square", t, 0.5); tone(1320, 0.1, "square", t + 0.05, 0.45); },
+      fall() { if (!enabled || !ac) return; const t = ac.currentTime; tone(900, 0.55, "sawtooth", t, 0.4, 120); },
+      thud() { if (!enabled || !ac) return; const t = ac.currentTime; noise(0.1, t, 0.4); tone(90, 0.12, "square", t, 0.4, 50); },
+      flyaway() { if (!enabled || !ac) return; const t = ac.currentTime;
+        for (let i = 0; i < 4; i++) tone(300 + i * 120, 0.08, "square", t + i * 0.06, 0.35); },
+      laugh() { if (!enabled || !ac) return; const t = ac.currentTime;
+        const seq = [330, 392, 330, 392, 262]; seq.forEach((f, i) => tone(f, 0.12, "square", t + i * 0.13, 0.4)); },
+      roundStart() { if (!enabled || !ac) return; const t = ac.currentTime;
+        const seq = [523, 659, 784, 1046]; seq.forEach((f, i) => tone(f, 0.1, "square", t + i * 0.1, 0.45)); },
+      perfect() { if (!enabled || !ac) return; const t = ac.currentTime;
+        const seq = [523, 659, 784, 1046, 1318, 1046, 1318]; seq.forEach((f, i) => tone(f, 0.11, "square", t + i * 0.09, 0.45)); },
+      gameover() { if (!enabled || !ac) return; const t = ac.currentTime;
+        const seq = [392, 330, 262, 196]; seq.forEach((f, i) => tone(f, 0.22, "square", t + i * 0.2, 0.45)); },
+      sniff() { if (!enabled || !ac) return; const t = ac.currentTime; tone(220, 0.06, "sine", t, 0.25); tone(260, 0.06, "sine", t + 0.09, 0.25); }
+    };
+  })();
+
+  // ---------- Girdi ----------
+  const mouse = { x: W / 2, y: H / 2, down: false };
+  function toCanvas(e) {
+    const r = canvas.getBoundingClientRect();
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX);
+    const cy = (e.touches ? e.touches[0].clientY : e.clientY);
+    const bx = (cx - r.left) * (canvas.width / r.width);
+    const by = (cy - r.top) * (canvas.height / r.height);
+    mouse.x = clamp((bx - view.ox) / view.s, 0, W);
+    mouse.y = clamp((by - view.oy) / view.s, 0, H);
+  }
+  canvas.addEventListener("mousemove", toCanvas);
+  canvas.addEventListener("mousedown", e => { toCanvas(e); Sound.unlock(); handleShoot(); });
+  canvas.addEventListener("touchstart", e => { e.preventDefault(); toCanvas(e); Sound.unlock(); handleShoot(); }, { passive: false });
+  canvas.addEventListener("touchmove", e => { e.preventDefault(); toCanvas(e); }, { passive: false });
+
+  window.addEventListener("keydown", e => {
+    const k = e.key.toLowerCase();
+    if (k === "s") { Sound.toggle(); }
+    else if (k === "p") { if (G.state === "FLYING") G.paused = !G.paused; }
+    else if (k === "a" && G.state === "MENU") startGame("A");
+    else if (k === "b" && G.state === "MENU") startGame("B");
+    else if ((k === "enter" || k === " ") && G.state === "GAMEOVER") toMenu();
+  });
+
+  document.getElementById("fs").addEventListener("click", () => {
+    const el = document.getElementById("stage");
+    if (!document.fullscreenElement) (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+    else document.exitFullscreen();
+  });
+
+  // ---------- Oyun durumu ----------
+  const G = {
+    state: "MENU",   // MENU, INTRO, FLYING, DOG, SUMMARY, GAMEOVER
+    mode: "A",       // A = tek ördek, B = çift ördek
+    round: 1,
+    score: 0,
+    bullets: 3,
+    ducksThisRound: 0,
+    hitsThisRound: 0,
+    hitRow: [],
+    ducks: [],
+    floats: [],
+    timer: 0,
+    spawnTime: 0,
+    paused: false,
+    dog: { x: 0, y: 0, mode: "walk", t: 0, carry: 0 },
+    summary: null,
+    flash: 0
+  };
+
+  const DUCKS_PER_ROUND = 10;
+  const COLORS = ["black", "red", "blue"];
+
+  function requiredHits(r) {
+    if (r <= 1) return 6;
+    if (r === 2) return 7;
+    if (r <= 4) return 8;
+    if (r <= 6) return 9;
+    return 10;
+  }
+  function duckValue(r) {
+    if (r <= 4) return 500;
+    if (r <= 9) return 800;
+    if (r <= 14) return 1000;
+    if (r <= 19) return 1500;
+    return 2000;
+  }
+  function duckSpeed(r) { return Math.min(72 + r * 9, 200); }
+  function flyTime(r) { return Math.max(7.0 - r * 0.45, 3.2); }
+
+  function toMenu() {
+    G.state = "MENU"; G.round = 1; G.score = 0; G.ducks = []; G.floats = [];
+    G.timer = 0;
+  }
+
+  function startGame(mode) {
+    G.mode = mode; G.round = 1; G.score = 0;
+    Sound.unlock();
+    beginRound();
+  }
+
+  function beginRound() {
+    G.bullets = 3;
+    G.ducksThisRound = 0;
+    G.hitsThisRound = 0;
+    G.hitRow = new Array(DUCKS_PER_ROUND).fill(null);
+    G.ducks = [];
+    G.floats = [];
+    G.state = "INTRO";
+    G.timer = 0;
+    G.dog = { x: 40, y: GRASS_Y - 4, mode: "walk", t: 0, carry: 0 };
+    Sound.roundStart();
+  }
+
+  function ducksPerSpawn() { return G.mode === "B" ? 2 : 1; }
+
+  function spawnDucks() {
+    const n = ducksPerSpawn();
+    const sp = duckSpeed(G.round);
+    G.ducks = [];
+    for (let i = 0; i < n; i++) {
+      const dir = choice([-1, 1]);
+      const ang = rand(0.6, 1.0);
+      G.ducks.push({
+        x: n === 1 ? rand(70, W - 70) : (i === 0 ? rand(50, 110) : rand(146, 206)),
+        y: SPAWN_Y,
+        vx: dir * sp * Math.cos(ang) * (0.9 + Math.random() * 0.3),
+        vy: -sp * Math.sin(ang),
+        dir,
+        color: choice(COLORS),
+        state: "fly",
+        flap: 0, flapAcc: 0,
+        hitT: 0, dirT: rand(0.5, 1.4),
+        spin: 0, _scored: false
+      });
+    }
+    G.bullets = 3;
+    G.spawnTime = flyTime(G.round);
+    G.state = "FLYING";
+    G.paused = false;
+    Sound.quack();
+  }
+
+  function handleShoot() {
+    if (G.state === "MENU") {
+      if (mouse.y > 150 && mouse.y < 178) {
+        if (mouse.x < W / 2) startGame("A"); else startGame("B");
+      }
+      return;
+    }
+    if (G.state === "GAMEOVER") { toMenu(); return; }
+    if (G.state !== "FLYING" || G.paused) return;
+    if (G.bullets <= 0) return;
+
+    G.bullets--;
+    Sound.shot();
+    G.flash = 0.05;
+
+    let target = null;
+    for (const d of G.ducks) {
+      if (d.state !== "fly") continue;
+      const dx = Math.abs(d.x - mouse.x), dy = Math.abs(d.y - mouse.y);
+      if (dx < 16 && dy < 14) {
+        if (!target || d.x < target.x) target = d;
+      }
+    }
+    if (target) {
+      target.state = "hit";
+      target._scored = true;
+      target.hitT = 0.45;
+      target.vx = 0; target.vy = 0;
+      const val = duckValue(G.round);
+      G.score += val;
+      G.hitsThisRound++;
+      G.floats.push({ x: target.x, y: target.y, t: 1.0, txt: String(val) });
+      Sound.hit();
+    }
+
+    if (G.bullets === 0) {
+      const anyFly = G.ducks.some(d => d.state === "fly");
+      if (anyFly) G.spawnTime = Math.min(G.spawnTime, 0.6);
+    }
+  }
+
+  // ---------- Güncelleme ----------
+  function update(dt) {
+    G.flash = Math.max(0, G.flash - dt);
+    for (const f of G.floats) { f.t -= dt; f.y -= 18 * dt; }
+    G.floats = G.floats.filter(f => f.t > 0);
+
+    if (G.state === "MENU") { G.timer += dt; return; }
+    if (G.state === "GAMEOVER") { G.timer += dt; return; }
+
+    if (G.state === "INTRO") {
+      G.timer += dt;
+      const dog = G.dog;
+      dog.t += dt;
+      if (dog.t < 1.6) { dog.mode = "walk"; dog.x = 30 + dog.t * 60; }
+      else if (dog.t < 2.4) { dog.mode = "sniff"; if (Math.random() < dt * 4) Sound.sniff(); }
+      else if (dog.t < 3.0) { dog.mode = "jump"; dog.y = GRASS_Y - 4 - Math.sin((dog.t - 2.4) / 0.6 * Math.PI) * 30; }
+      else { spawnDucks(); }
+      return;
+    }
+
+    if (G.state === "FLYING") {
+      if (G.paused) return;
+      G.spawnTime -= dt;
+
+      for (const d of G.ducks) {
+        if (d.state === "fly") {
+          d.flapAcc += dt;
+          if (d.flapAcc > 0.09) { d.flapAcc = 0; d.flap = (d.flap + 1) % 4; }
+          d.x += d.vx * dt; d.y += d.vy * dt;
+          if (d.x < 14) { d.x = 14; d.vx = Math.abs(d.vx); d.dir = 1; }
+          if (d.x > W - 14) { d.x = W - 14; d.vx = -Math.abs(d.vx); d.dir = -1; }
+          if (d.y < DUCK_MIN_Y) { d.y = DUCK_MIN_Y; d.vy = Math.abs(d.vy); }
+          if (d.y > DUCK_MAX_Y) { d.y = DUCK_MAX_Y; d.vy = -Math.abs(d.vy); }
+          d.dirT -= dt;
+          if (d.dirT <= 0) {
+            d.dirT = rand(0.5, 1.4);
+            const sp = duckSpeed(G.round);
+            const ang = rand(0.3, 1.1);
+            const ddir = Math.random() < 0.5 ? -1 : 1;
+            d.vx = ddir * sp * Math.cos(ang);
+            d.vy = -Math.abs(sp * Math.sin(ang)) * (Math.random() < 0.25 ? -0.5 : 1);
+            d.dir = ddir;
+          }
+        } else if (d.state === "hit") {
+          d.hitT -= dt;
+          if (d.hitT <= 0) { d.state = "fall"; d.vy = 0; Sound.fall(); }
+        } else if (d.state === "fall") {
+          d.vy += 320 * dt;
+          d.y += d.vy * dt;
+          d.spin += dt * 10;
+          if (d.y >= GRASS_Y - 2) { d.y = GRASS_Y - 2; d.state = "done"; Sound.thud(); }
+        } else if (d.state === "escape") {
+          d.flapAcc += dt;
+          if (d.flapAcc > 0.06) { d.flapAcc = 0; d.flap = (d.flap + 1) % 4; }
+          d.y -= 150 * dt; d.x += d.vx * 0.3 * dt;
+          if (d.y < -20) d.state = "done";
+        }
+      }
+
+      if (G.spawnTime <= 0) {
+        let triggered = false;
+        for (const d of G.ducks) {
+          if (d.state === "fly") { d.state = "escape"; triggered = true; }
+        }
+        if (triggered) Sound.flyaway();
+      }
+
+      const pending = G.ducks.some(d => d.state === "fly" || d.state === "hit" || d.state === "fall" ||
+        (d.state === "escape" && d.y >= -20));
+      if (!pending && G.ducks.length) {
+        beginDogPhase();
+      }
+      return;
+    }
+
+    if (G.state === "DOG") {
+      G.dog.t += dt;
+      if (G.dog.t > (G.dog.mode === "laugh" ? 1.6 : 1.4)) {
+        afterDog();
+      }
+      return;
+    }
+
+    if (G.state === "SUMMARY") {
+      G.timer += dt;
+      if (G.timer > 2.2) {
+        if (G.summary.passed) { G.round++; beginRound(); }
+        else { G.state = "GAMEOVER"; G.timer = 0; Sound.gameover(); }
+      }
+      return;
+    }
+  }
+
+  function beginDogPhase() {
+    const successCount = G.ducks.filter(d => d._scored).length;
+    const start = G.ducksThisRound;
+    const n = G.ducks.length;
+    for (let i = 0; i < n; i++) {
+      G.hitRow[start + i] = G.ducks[i]._scored ? true : false;
+    }
+    G.ducksThisRound += n;
+
+    G.dog = { x: W / 2, y: GRASS_Y + 22, mode: successCount > 0 ? "retrieve" : "laugh", t: 0, carry: successCount };
+    if (successCount === 0) Sound.laugh();
+    G.state = "DOG";
+  }
+
+  function afterDog() {
+    if (G.ducksThisRound >= DUCKS_PER_ROUND) {
+      const need = requiredHits(G.round);
+      const passed = G.hitsThisRound >= need;
+      let bonus = 0;
+      if (G.hitsThisRound === DUCKS_PER_ROUND) { bonus = 10000; G.score += bonus; }
+      if (passed && bonus) Sound.perfect();
+      G.summary = { hits: G.hitsThisRound, need, passed, bonus };
+      G.state = "SUMMARY"; G.timer = 0;
+    } else {
+      spawnDucks();
+    }
+  }
+
+  // ---------- Çizim: arka plan ----------
+  function drawBackground() {
+    const g = ctx.createLinearGradient(0, 0, 0, GRASS_Y);
+    g.addColorStop(0, "#2f6fe0");
+    g.addColorStop(0.55, "#5fa0ff");
+    g.addColorStop(1, "#c4e6ff");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, GRASS_Y);
+
+    // güneş + hâle
+    const sun = ctx.createRadialGradient(208, 38, 3, 208, 38, 36);
+    sun.addColorStop(0, "rgba(255,250,220,0.98)");
+    sun.addColorStop(0.4, "rgba(255,240,180,0.5)");
+    sun.addColorStop(1, "rgba(255,240,180,0)");
+    ctx.fillStyle = sun; ctx.fillRect(150, 0, 110, 92);
+    ctx.fillStyle = "#fff6cf"; dot(208, 38, 11);
+
+    // bulutlar
+    softCloud(44, 32, 1.15); softCloud(150, 20, 0.8); softCloud(108, 62, 0.72);
+
+    // uzak tepeler (parallaks)
+    ctx.fillStyle = "#3f7bbf"; hill(72, GRASS_Y, 100, 42); hill(206, GRASS_Y, 116, 54);
+    ctx.fillStyle = "#3f9a52"; hill(38, GRASS_Y, 72, 30); hill(150, GRASS_Y, 92, 40); hill(252, GRASS_Y, 84, 34);
+
+    // çimen
+    const gg = ctx.createLinearGradient(0, GRASS_Y, 0, HUD_Y);
+    gg.addColorStop(0, "#74d44e"); gg.addColorStop(1, "#3f9a32");
+    ctx.fillStyle = gg; ctx.fillRect(0, GRASS_Y, W, HUD_Y - GRASS_Y);
+    ctx.fillStyle = "#86e85e"; ctx.fillRect(0, GRASS_Y, W, 2);
+
+    // çimen dokusu
+    ctx.strokeStyle = "rgba(36,110,36,0.45)"; ctx.lineWidth = 0.7;
+    for (let i = 0; i < 46; i++) {
+      const gx = (i * 37) % W + 3, gy = GRASS_Y + 5 + (i * 17) % (HUD_Y - GRASS_Y - 6);
+      ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx + 1.4, gy - 3); ctx.stroke();
+    }
+
+    // çalılar
+    drawBush(26, GRASS_Y + 1, 56, 18);
+    drawBush(104, GRASS_Y + 1, 80, 22);
+    drawBush(204, GRASS_Y + 1, 66, 18);
+    ctx.fillStyle = "#246b20"; ctx.fillRect(0, GRASS_Y + 10, W, HUD_Y - GRASS_Y - 10);
+  }
+  function softCloud(x, y, s) {
+    const grd = ctx.createLinearGradient(0, y - 10 * s, 0, y + 9 * s);
+    grd.addColorStop(0, "rgba(255,255,255,0.98)");
+    grd.addColorStop(1, "rgba(220,236,255,0.9)");
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(x, y, 8 * s, 0, 7); ctx.arc(x + 11 * s, y + 2, 11 * s, 0, 7);
+    ctx.arc(x + 24 * s, y, 8 * s, 0, 7); ctx.arc(x + 13 * s, y - 6 * s, 9 * s, 0, 7);
+    ctx.fill();
+  }
+  function hill(cx, baseY, w, h) {
+    ctx.beginPath();
+    ctx.moveTo(cx - w, baseY); ctx.quadraticCurveTo(cx, baseY - h, cx + w, baseY);
+    ctx.fill();
+  }
+  function drawBush(x, baseY, w, h) {
+    const grd = ctx.createLinearGradient(0, baseY - h, 0, baseY);
+    grd.addColorStop(0, "#3a9a34"); grd.addColorStop(1, "#1f6b1c");
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.moveTo(x, baseY);
+    ctx.arc(x + w * 0.22, baseY - h * 0.6, h * 0.72, Math.PI, 0);
+    ctx.arc(x + w * 0.55, baseY - h * 0.85, h * 0.95, Math.PI, 0);
+    ctx.arc(x + w * 0.85, baseY - h * 0.5, h * 0.62, Math.PI, 0);
+    ctx.lineTo(x + w, baseY); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "rgba(150,230,120,0.35)";
+    ctx.beginPath(); ctx.arc(x + w * 0.55, baseY - h * 0.95, h * 0.48, Math.PI, 0); ctx.fill();
+  }
+
+  // ---------- Çizim: ördek ----------
+  const DUCK_PAL = {
+    black: { body: "#2b2b33", light: "#4c4c59", wing: "#5a5a68", wing2: "#37373f", head: "#1f7a34" },
+    red:   { body: "#b83227", light: "#e0584a", wing: "#e86657", wing2: "#8f261d", head: "#1f7a34" },
+    blue:  { body: "#2f5fc0", light: "#5a86e0", wing: "#5f8fe8", wing2: "#26509f", head: "#1f7a34" }
+  };
+
+  function drawDuck(d) {
+    const pal = DUCK_PAL[d.color];
+    ctx.save();
+    ctx.translate(d.x, d.y);
+    if (d.state === "fall") { ctx.rotate(Math.sin(d.spin) * 0.5); }
+    ctx.scale(d.dir, 1);
+    ctx.lineJoin = "round";
+
+    const bg = ctx.createLinearGradient(0, -9, 0, 9);
+    bg.addColorStop(0, pal.light); bg.addColorStop(1, pal.body);
+
+    if (d.state === "fly" || d.state === "escape") {
+      const flap = d.flap; // 0..3 -> yukarı, orta, aşağı, orta
+      ctx.fillStyle = pal.wing2;
+      if (flap === 0) tri(-1, -2, -7, -19, 7, -7);
+      else if (flap === 2) tri(-1, 1, -7, 17, 7, 5);
+      else tri(-2, -1, -13, -2, 5, -3);
+      blob(-10, -1, 6, 3.4, pal.body);
+      blob(0, 0, 11, 8, bg);
+      ctx.fillStyle = "rgba(255,255,255,0.18)";
+      ctx.beginPath(); ctx.ellipse(1, 3, 7, 4, 0, 0, 7); ctx.fill();
+      blob(9, -5, 6.2, 6, pal.head);
+      ctx.fillStyle = "#ffb02e"; tri(14, -6, 21, -5, 14, -3);
+      ctx.fillStyle = "#e0871c"; tri(14, -4.6, 19, -4.3, 14, -3);
+      ctx.fillStyle = "#fff"; dot(10, -6, 1.7); ctx.fillStyle = "#111"; dot(10.5, -6, 0.9);
+      ctx.fillStyle = pal.wing;
+      if (flap === 0) tri(-1, -3, -6, -20, 8, -9);
+      else if (flap === 2) tri(-1, 2, -6, 18, 8, 7);
+      else tri(-2, -1, -13, -3, 6, -4);
+      ctx.restore(); return;
+    }
+
+    if (d.state === "hit") {
+      blob(0, 0, 11, 8, bg);
+      blob(8, -7, 6, 6, pal.head);
+      ctx.fillStyle = "#ffb02e"; tri(13, -7, 19, -6, 13, -4);
+      ctx.strokeStyle = "#111"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(6.5, -9); ctx.lineTo(10, -6); ctx.moveTo(10, -9); ctx.lineTo(6.5, -6); ctx.stroke();
+      ctx.fillStyle = pal.wing; tri(-2, -2, -10, -15, 3, -6);
+      ctx.restore(); return;
+    }
+
+    if (d.state === "fall") {
+      blob(0, 0, 11, 8, bg);
+      blob(8, -6, 6, 6, pal.head);
+      ctx.fillStyle = "#ffb02e"; tri(13, -6, 19, -5, 13, -3);
+      ctx.fillStyle = pal.wing; tri(-2, 0, -4, -16, 4, -4); tri(2, 0, 6, -14, -2, -4);
+      ctx.restore(); return;
+    }
+    ctx.restore();
+  }
+  function blob(x, y, rx, ry, fill) {
+    ctx.fillStyle = fill;
+    ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, 7); ctx.fill();
+    ctx.lineWidth = 0.8; ctx.strokeStyle = "rgba(0,0,0,0.28)"; ctx.stroke();
+  }
+  function oval(x, y, rx, ry) { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, 7); ctx.fill(); }
+  function dot(x, y, r) { ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); }
+  function tri(ax, ay, bx, by, cx, cy) { ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill(); }
+
+  // ---------- Çizim: köpek ----------
+  function drawDog(dog) {
+    const x = dog.x, y = dog.y;
+    ctx.save();
+    ctx.translate(x, y);
+    if (dog.mode === "walk" || dog.mode === "sniff") {
+      const bob = dog.mode === "walk" ? Math.sin(dog.t * 10) * 1.2 : 0;
+      drawDogBody(0, bob, dog.mode === "sniff");
+    } else if (dog.mode === "jump") {
+      drawDogBody(0, 0, false, true);
+    } else if (dog.mode === "retrieve") {
+      const up = Math.min(dog.t / 0.4, 1);
+      const yy = 18 - up * 30;
+      drawDogHappy(0, yy, dog.carry);
+    } else if (dog.mode === "laugh") {
+      const up = Math.min(dog.t / 0.35, 1);
+      const yy = 18 - up * 28;
+      drawDogLaugh(0, yy, dog.t);
+    }
+    ctx.restore();
+  }
+
+  function drawDogBody(ox, oy, sniff, jump) {
+    ctx.save(); ctx.translate(ox, oy);
+    const tan = "#caa472", brown = "#6e4a26", white = "#f3e6cf", dark = "#3a2613";
+    ctx.fillStyle = brown;
+    ctx.fillRect(-12, -4, 4, 8); ctx.fillRect(8, -4, 4, 8);
+    if (!jump) { ctx.fillRect(-4, -3, 4, 7); ctx.fillRect(2, -3, 4, 7); }
+    ctx.fillStyle = tan;
+    ctx.beginPath(); ctx.ellipse(-2, -10, 15, 8, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = brown;
+    ctx.beginPath(); ctx.ellipse(-6, -13, 8, 5, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = brown; tri(-16, -12, -24, -18, -15, -8);
+    ctx.fillStyle = tan;
+    ctx.beginPath(); ctx.ellipse(14, -13, 9, 7, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = white;
+    ctx.beginPath(); ctx.ellipse(20, -10, 6, 4, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = brown;
+    ctx.beginPath(); ctx.ellipse(9, -16, 5, 7, -0.3, 0, 7); ctx.fill();
+    ctx.fillStyle = dark; dot(25, -11, 2);
+    ctx.fillStyle = dark; dot(15, -16, 1.3);
+    if (sniff) { ctx.fillStyle = dark; dot(27, -8, 0.8); dot(29, -9, 0.8); }
+    ctx.restore();
+  }
+
+  function drawDogHappy(ox, oy, carry) {
+    ctx.save(); ctx.translate(ox, oy);
+    const tan = "#caa472", brown = "#6e4a26", white = "#f3e6cf", dark = "#3a2613";
+    ctx.fillStyle = tan;
+    ctx.beginPath(); ctx.ellipse(0, 6, 14, 12, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = tan; ctx.beginPath(); ctx.ellipse(0, -8, 11, 9, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = brown;
+    ctx.beginPath(); ctx.ellipse(-11, -6, 4, 8, 0.2, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(11, -6, 4, 8, -0.2, 0, 7); ctx.fill();
+    ctx.fillStyle = white; ctx.beginPath(); ctx.ellipse(0, -5, 6, 4, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = dark; dot(0, -6, 2);
+    ctx.strokeStyle = dark; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(-6, -12); ctx.lineTo(-3, -10); ctx.lineTo(-6, -9);
+    ctx.moveTo(6, -12); ctx.lineTo(3, -10); ctx.lineTo(6, -9); ctx.stroke();
+    for (let i = 0; i < carry; i++) {
+      const dx = carry === 1 ? 0 : (i === 0 ? -8 : 8);
+      drawHeldDuck(dx, -20);
+    }
+    ctx.restore();
+  }
+  function drawHeldDuck(x, y) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = "#2b2b33"; oval(0, 0, 7, 5);
+    ctx.fillStyle = "#1f7a34"; oval(4, -3, 4, 4);
+    ctx.fillStyle = "#ffb02e"; tri(7, -3, 11, -2, 7, -1);
+    ctx.fillStyle = "#5a5a68"; tri(-1, -1, -4, -9, 3, -3);
+    ctx.restore();
+  }
+  function drawDogLaugh(ox, oy, t) {
+    ctx.save(); ctx.translate(ox, oy);
+    const tan = "#caa472", brown = "#6e4a26", white = "#f3e6cf", dark = "#3a2613";
+    const sh = Math.sin(t * 22) * 1.2;
+    ctx.translate(0, sh);
+    ctx.fillStyle = tan; ctx.beginPath(); ctx.ellipse(0, 6, 14, 12, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = brown;
+    ctx.beginPath(); ctx.ellipse(-9, 2, 4, 4, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(9, 2, 4, 4, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = tan; ctx.beginPath(); ctx.ellipse(0, -8, 11, 9, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = brown;
+    ctx.beginPath(); ctx.ellipse(-11, -6, 4, 8, 0.2, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(11, -6, 4, 8, -0.2, 0, 7); ctx.fill();
+    ctx.fillStyle = white; ctx.beginPath(); ctx.ellipse(0, -4, 6, 4, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = dark; ctx.beginPath(); ctx.ellipse(0, -3, 4, 3, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = dark; ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(-5, -12, 2, 0.1, Math.PI - 0.1);
+    ctx.arc(5, -12, 2, 0.1, Math.PI - 0.1); ctx.stroke();
+    ctx.restore();
+  }
+
+  // ---------- Çizim: HUD ----------
+  function drawHUD() {
+    const bar = ctx.createLinearGradient(0, HUD_Y, 0, H);
+    bar.addColorStop(0, "#1c1610"); bar.addColorStop(1, "#0b0908");
+    ctx.fillStyle = bar; ctx.fillRect(0, HUD_Y, W, H - HUD_Y);
+    ctx.fillStyle = "#caa15a"; ctx.fillRect(0, HUD_Y, W, 2);
+    ctx.fillStyle = "rgba(255,222,150,0.25)"; ctx.fillRect(0, HUD_Y + 2, W, 1);
+
+    ctx.textBaseline = "middle";
+    ctx.font = "bold 9px 'Courier New', monospace"; ctx.textAlign = "left";
+    ctx.fillStyle = "#f3e6cf"; ctx.fillText("TUR " + G.round, 6, HUD_Y + 10);
+
+    for (let i = 0; i < 3; i++) {
+      const on = i < G.bullets;
+      if (on) { ctx.shadowColor = "rgba(255,210,60,0.85)"; ctx.shadowBlur = 4; ctx.fillStyle = "#ffd23a"; }
+      else { ctx.fillStyle = "#3a342a"; }
+      bullet(56 + i * 9, HUD_Y + 10); ctx.shadowBlur = 0;
+    }
+
+    ctx.fillStyle = "rgba(0,0,0,0.35)"; roundRect(W - 76, HUD_Y + 4, 72, 21, 4); ctx.fill();
+    ctx.textAlign = "center"; ctx.fillStyle = "#bda77f"; ctx.font = "6px 'Courier New', monospace";
+    ctx.fillText("SKOR", W - 40, HUD_Y + 9);
+    ctx.fillStyle = "#ffd23a"; ctx.font = "bold 13px 'Courier New', monospace";
+    ctx.fillText(String(G.score).padStart(6, "0"), W - 40, HUD_Y + 18);
+
+    ctx.textAlign = "left";
+    const rowX = 8, rowY = HUD_Y + 28, gap = 13;
+    const need = requiredHits(G.round);
+    for (let i = 0; i < DUCKS_PER_ROUND; i++) {
+      const v = G.hitRow[i];
+      if (v === true) { ctx.shadowColor = "rgba(255,90,70,0.9)"; ctx.shadowBlur = 4; ctx.fillStyle = "#ff5a48"; }
+      else if (v === false) { ctx.fillStyle = "#3a3a3a"; }
+      else { ctx.fillStyle = "#8a8a8a"; }
+      miniDuck(rowX + i * gap, rowY); ctx.shadowBlur = 0;
+    }
+    const lineX = rowX + need * gap - gap / 2;
+    ctx.strokeStyle = "#ffd23a"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(lineX, rowY - 7); ctx.lineTo(lineX, rowY + 6); ctx.stroke();
+    ctx.fillStyle = "#ffd23a"; ctx.font = "6px 'Courier New', monospace"; ctx.textAlign = "center";
+    ctx.fillText("HIT", lineX, rowY + 11);
+  }
+  function bullet(x, y) {
+    ctx.fillRect(x - 2, y - 3, 4, 4);
+    ctx.beginPath(); ctx.moveTo(x - 2, y - 3); ctx.lineTo(x, y - 6); ctx.lineTo(x + 2, y - 3); ctx.closePath(); ctx.fill();
+  }
+  function miniDuck(x, y) {
+    ctx.beginPath(); ctx.ellipse(x + 4, y, 4, 2.4, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x + 7, y - 2, 2.2, 2.2, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x + 2, y - 1); ctx.lineTo(x - 1, y - 5); ctx.lineTo(x + 4, y - 2); ctx.closePath(); ctx.fill();
+  }
+
+  function drawCrosshair() {
+    const x = mouse.x, y = mouse.y;
+    ctx.save();
+    ctx.shadowColor = "rgba(255,40,40,0.9)"; ctx.shadowBlur = 6;
+    ctx.strokeStyle = "#ff3030"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x, y, 8, 0, 7); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x - 13, y); ctx.lineTo(x - 4, y);
+    ctx.moveTo(x + 4, y); ctx.lineTo(x + 13, y);
+    ctx.moveTo(x, y - 13); ctx.lineTo(x, y - 4);
+    ctx.moveTo(x, y + 4); ctx.lineTo(x, y + 13);
+    ctx.stroke();
+    ctx.shadowBlur = 0; ctx.fillStyle = "#ff3030"; dot(x, y, 1.3);
+    ctx.restore();
+  }
+
+  // ---------- Menü ----------
+  function drawMenu() {
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    ctx.font = "bold 30px 'Arial Black', Arial, sans-serif";
+    ctx.fillText("DUCK", W / 2 + 1, 57); ctx.fillText("HUNT", W / 2 + 1, 91);
+    ctx.fillStyle = "#fff"; ctx.fillText("DUCK", W / 2, 56);
+    ctx.fillStyle = "#ffd23a"; ctx.fillText("HUNT", W / 2, 90);
+    ctx.fillStyle = "#1f6f2f"; ctx.font = "8px 'Courier New', monospace";
+    ctx.fillText("klasik nişancı oyunu", W / 2, 110);
+
+    const dog = { x: 200, y: GRASS_Y - 4, mode: "walk", t: G.timer };
+    drawDog(dog);
+    const fd = { x: 60 + Math.sin(G.timer * 1.5) * 30, y: 120 + Math.cos(G.timer * 2) * 12, dir: 1, color: "black", state: "fly", flap: Math.floor(G.timer * 10) % 4, spin: 0 };
+    drawDuck(fd);
+
+    const blink = Math.floor(G.timer * 2) % 2 === 0;
+    drawChoice(W / 4, 164, "MOD A", "tek ördek", mouse.x < W / 2 && mouse.y > 150 && mouse.y < 178);
+    drawChoice(3 * W / 4, 164, "MOD B", "çift ördek", mouse.x >= W / 2 && mouse.y > 150 && mouse.y < 178);
+
+    ctx.fillStyle = blink ? "#fff" : "#888";
+    ctx.font = "8px 'Courier New', monospace"; ctx.textAlign = "center";
+    ctx.fillText("tıklayın ya da A / B tuşuna basın", W / 2, 192);
+
+    drawHUDStaticMenu();
+  }
+  function drawChoice(cx, cy, title, sub, hover) {
+    ctx.fillStyle = hover ? "#ffd23a" : "#2a2a35";
+    roundRect(cx - 46, cy - 14, 92, 30, 5); ctx.fill();
+    ctx.fillStyle = hover ? "#1b1b22" : "#fff";
+    ctx.font = "bold 11px 'Courier New', monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(title, cx, cy - 2);
+    ctx.font = "7px 'Courier New', monospace";
+    ctx.fillStyle = hover ? "#1b1b22" : "#9aa0ad";
+    ctx.fillText(sub, cx, cy + 8);
+  }
+  function drawHUDStaticMenu() {
+    ctx.fillStyle = "#0b0908"; ctx.fillRect(0, HUD_Y, W, H - HUD_Y);
+    ctx.fillStyle = "#caa15a"; ctx.fillRect(0, HUD_Y, W, 2);
+    ctx.fillStyle = "#9a8a6a"; ctx.font = "7px 'Courier New', monospace";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("S: ses " + (Sound.enabled ? "açık" : "kapalı") + "   ·   P: duraklat   ·   10/10 vurun = +10000 bonus", W / 2, HUD_Y + 20);
+  }
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawBanner(text, color, sub) {
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillRect(0, 70, W, sub ? 54 : 36);
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillStyle = color; ctx.font = "bold 18px 'Arial Black', Arial, sans-serif";
+    ctx.fillText(text, W / 2, sub ? 88 : 90);
+    if (sub) { ctx.fillStyle = "#fff"; ctx.font = "9px 'Courier New', monospace"; ctx.fillText(sub, W / 2, 110); }
+  }
+
+  // ---------- Sahne çizimi (256x240 tasarım uzayında) ----------
+  function drawScene() {
+    drawBackground();
+
+    if (G.state === "MENU") { drawMenu(); drawCrosshair(); return; }
+
+    for (const d of G.ducks) if (d.state !== "done") drawDuck(d);
+
+    if (G.state === "INTRO") drawDog(G.dog);
+    if (G.state === "DOG") drawDog(G.dog);
+
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    for (const f of G.floats) {
+      ctx.globalAlpha = clamp(f.t, 0, 1);
+      ctx.fillStyle = "#fff"; ctx.font = "bold 9px 'Courier New', monospace";
+      ctx.fillText(f.txt, f.x, f.y);
+      ctx.globalAlpha = 1;
+    }
+
+    if (G.state === "INTRO" && G.timer < 1.4) {
+      ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.font = "bold 12px 'Courier New', monospace";
+      ctx.fillText("TUR " + G.round, W / 2, 40);
+    }
+    if (G.state === "FLYING") {
+      const tot = flyTime(G.round);
+      const w = clamp(G.spawnTime / tot, 0, 1) * (W - 20);
+      ctx.fillStyle = "rgba(0,0,0,0.25)"; ctx.fillRect(10, 6, W - 20, 4);
+      ctx.fillStyle = G.spawnTime < 1.5 ? "#ff3a3a" : "#ffd23a";
+      ctx.fillRect(10, 6, w, 4);
+      if (G.paused) drawBanner("DURAKLATILDI", "#fff", "P ile devam edin");
+    }
+    if (G.state === "SUMMARY") {
+      const s = G.summary;
+      if (s.passed) drawBanner(s.bonus ? "MÜKEMMEL!" : "GEÇTİNİZ", "#5cff5c",
+        s.bonus ? ("10/10  +" + s.bonus + " bonus!") : (s.hits + " / " + s.need + " ördek"));
+      else drawBanner("TUR BAŞARISIZ", "#ff5c5c", s.hits + " / " + s.need + " ördek gerekliydi");
+    }
+
+    drawHUD();
+
+    if (G.state === "GAMEOVER") {
+      ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(0, 0, W, H);
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillStyle = "#ff5c5c"; ctx.font = "bold 22px 'Arial Black', Arial, sans-serif";
+      ctx.fillText("OYUN BİTTİ", W / 2, 80);
+      ctx.fillStyle = "#fff"; ctx.font = "10px 'Courier New', monospace";
+      ctx.fillText("Ulaşılan tur: " + G.round, W / 2, 110);
+      ctx.fillStyle = "#ffd23a"; ctx.font = "bold 14px 'Courier New', monospace";
+      ctx.fillText("SKOR " + String(G.score).padStart(6, "0"), W / 2, 132);
+      const blink = Math.floor(G.timer * 2) % 2 === 0;
+      ctx.fillStyle = blink ? "#fff" : "#888"; ctx.font = "9px 'Courier New', monospace";
+      ctx.fillText("menü için tıklayın / Enter", W / 2, 158);
+    }
+
+    drawCrosshair();
+
+    if (G.flash > 0) { ctx.fillStyle = "rgba(255,255,255," + (G.flash * 6) + ")"; ctx.fillRect(0, 0, W, GRASS_Y); }
+  }
+
+  // ---------- Görüntü ölçekleme (responsive + tam ekran) ----------
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const r = stage.getBoundingClientRect();
+    const w = Math.max(1, Math.round(r.width * dpr));
+    const h = Math.max(1, Math.round(r.height * dpr));
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+  }
+  function render() {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#0a0a0d";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const s = Math.min(canvas.width / W, canvas.height / H);
+    view.s = s;
+    view.ox = (canvas.width - W * s) / 2;
+    view.oy = (canvas.height - H * s) / 2;
+    ctx.setTransform(s, 0, 0, s, view.ox, view.oy);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
+    drawScene();
+    ctx.restore();
+  }
+  window.addEventListener("resize", resize);
+  document.addEventListener("fullscreenchange", resize);
+  document.addEventListener("webkitfullscreenchange", resize);
+  if (window.ResizeObserver) { try { new ResizeObserver(resize).observe(stage); } catch (e) {} }
+  resize();
+
+  // ---------- Döngü ----------
+  let last = performance.now();
+  function loop(now) {
+    let dt = (now - last) / 1000; last = now;
+    if (dt > 0.05) dt = 0.05;
+    update(dt);
+    render();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  toMenu();
+})();
+</script>
+</body>
+</html>

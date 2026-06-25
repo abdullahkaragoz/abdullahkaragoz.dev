@@ -1,0 +1,19 @@
+# OS / sistem
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+$RECYCLE.BIN/
+
+# Editör / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Loglar / geçici
+*.log
+*.tmp
+
+# Bağımlılıklar (varsa)
+node_modules/

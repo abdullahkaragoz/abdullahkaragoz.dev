@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Radyo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Segoe UI", -apple-system, system-ui, sans-serif;
+    background: linear-gradient(165deg, #0f1320 0%, #161b2b 55%, #1b2236 100%);
+    color: #e7ecf6; height: 100%; overflow: hidden;
+    -webkit-user-select: none; user-select: none;
+  }
+  #app { height: 100%; display: flex; flex-direction: column; }
+  :root { --acc: #2dd4bf; --acc2: #38bdf8; }
+
+  header { padding: 14px 16px 10px; flex: none; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .brand .ic { width: 26px; height: 26px; color: var(--acc); }
+  .brand h1 { font-size: 18px; font-weight: 800; letter-spacing: .3px; }
+  .brand .sub { font-size: 11px; opacity: .55; margin-left: auto; }
+
+  .search { position: relative; }
+  .search input {
+    width: 100%; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
+    border-radius: 10px; padding: 10px 12px 10px 36px; color: #fff; font-size: 14px; outline: none;
+  }
+  .search input::placeholder { color: rgba(255,255,255,.4); }
+  .search input:focus { border-color: var(--acc); }
+  .search .si { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; opacity: .5; }
+
+  .tabs { display: flex; gap: 6px; margin-top: 10px; }
+  .tab {
+    flex: 1; text-align: center; padding: 7px 4px; border-radius: 9px; font-size: 13px; font-weight: 600;
+    background: rgba(255,255,255,.05); color: #c7cfde; cursor: pointer; border: 1px solid transparent;
+  }
+  .tab.active { background: rgba(45,212,191,.16); color: var(--acc); border-color: rgba(45,212,191,.4); }
+
+  #list { flex: 1; overflow-y: auto; padding: 6px 8px 8px; }
+  .row {
+    display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 11px;
+    padding: 8px 8px; border-radius: 10px; cursor: pointer;
+  }
+  .row:hover { background: rgba(255,255,255,.05); }
+  .row.playing { background: rgba(45,212,191,.12); box-shadow: inset 3px 0 0 var(--acc); }
+  .avatar { width: 38px; height: 38px; border-radius: 9px; object-fit: cover; background: #2a3450; display: block; }
+  .avatar.letter { display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; color: #fff; }
+  .meta { min-width: 0; }
+  .meta .nm { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .meta .tg { font-size: 11px; opacity: .55; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  .star { width: 30px; height: 30px; border: none; background: none; cursor: pointer; color: rgba(255,255,255,.35); font-size: 17px; line-height: 1; border-radius: 8px; }
+  .star.on { color: #f6c453; }
+  .star:hover { background: rgba(255,255,255,.08); }
+
+  .state { padding: 30px 18px; text-align: center; opacity: .65; font-size: 14px; line-height: 1.6; }
+  .state button { margin-top: 12px; background: var(--acc); color: #04211d; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 700; cursor: pointer; }
+  .spinner { width: 26px; height: 26px; border: 3px solid rgba(255,255,255,.18); border-top-color: var(--acc); border-radius: 50%; margin: 0 auto 12px; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Oynatıcı çubuğu */
+  #player {
+    flex: none; display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+    background: rgba(10,13,22,.85); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(255,255,255,.1);
+  }
+  #player .av { width: 44px; height: 44px; border-radius: 10px; background: #2a3450; flex: none; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  #player .av img { width: 100%; height: 100%; object-fit: cover; }
+  #player .av.empty::after { content: "♪"; color: rgba(255,255,255,.4); font-size: 20px; }
+  .np { min-width: 0; flex: 1; }
+  .np .nm { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .np .st { font-size: 11.5px; margin-top: 2px; display: flex; align-items: center; gap: 6px; opacity: .8; }
+  .np .st .dot { width: 7px; height: 7px; border-radius: 50%; background: #6b7488; }
+  .np.live .st .dot { background: var(--acc); box-shadow: 0 0 8px var(--acc); }
+  .np.err .st { color: #ff8585; }
+
+  .eq { display: flex; align-items: flex-end; gap: 2px; height: 22px; width: 26px; flex: none; }
+  .eq span { flex: 1; background: var(--acc); border-radius: 1px; height: 20%; }
+  .np.live ~ .eq span { animation: bounce .9s ease-in-out infinite; }
+  .eq span:nth-child(2) { animation-delay: .15s; } .eq span:nth-child(3) { animation-delay: .3s; } .eq span:nth-child(4) { animation-delay: .45s; }
+  @keyframes bounce { 0%,100% { height: 20%; } 50% { height: 100%; } }
+
+  .pbtn { width: 46px; height: 46px; flex: none; border-radius: 50%; border: none; background: var(--acc); color: #04211d; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .pbtn:active { transform: scale(.94); }
+  .pbtn svg { width: 22px; height: 22px; }
+  .vol { display: flex; align-items: center; gap: 6px; width: 96px; flex: none; }
+  .vol svg { width: 16px; height: 16px; opacity: .6; flex: none; }
+  .vol input { width: 100%; accent-color: var(--acc); }
+  @media (max-width: 460px) { .vol { width: 64px; } .brand .sub { display: none; } .eq { display: none; } }
+</style>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <div class="brand">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 4 L7 8"/><rect x="3" y="8" width="18" height="12" rx="2"/><circle cx="8" cy="14" r="3"/><line x1="15" y1="12" x2="18" y2="12"/><line x1="15" y1="16" x2="18" y2="16"/>
+        </svg>
+        <h1>Radyo</h1>
+        <span class="sub">canlı yayın</span>
+      </div>
+      <div class="search">
+        <svg class="si" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+        <input id="q" type="text" placeholder="İstasyon ara… (örn. jazz, türkçe, lofi)" />
+      </div>
+      <div class="tabs">
+        <div class="tab active" data-tab="tr">Türkiye</div>
+        <div class="tab" data-tab="pop">Popüler</div>
+        <div class="tab" data-tab="fav">Favoriler</div>
+      </div>
+    </header>
+
+    <div id="list"></div>
+
+    <div id="player">
+      <div class="av empty" id="npAv"></div>
+      <div class="np" id="np">
+        <div class="nm" id="npName">Bir istasyon seçin</div>
+        <div class="st"><span class="dot"></span><span id="npStatus">Hazır</span></div>
+      </div>
+      <div class="eq"><span></span><span></span><span></span><span></span></div>
+      <div class="vol">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 9v6h4l5 4V5L8 9H4z"/></svg>
+        <input id="vol" type="range" min="0" max="100" value="80" />
+      </div>
+      <button class="pbtn" id="play" aria-label="Oynat/Duraklat"></button>
+    </div>
+  </div>
+  <audio id="audio"></audio>
+
+<script>
+"use strict";
+(function () {
+  const FALLBACK_BASES = [
+    "https://de1.api.radio-browser.info",
+    "https://nl1.api.radio-browser.info",
+    "https://at1.api.radio-browser.info",
+    "https://fi1.api.radio-browser.info"
+  ];
+  let bases = FALLBACK_BASES.slice();
+
+  const listEl = document.getElementById("list");
+  const audio = document.getElementById("audio");
+  const qEl = document.getElementById("q");
+  const playBtn = document.getElementById("play");
+  const volEl = document.getElementById("vol");
+  const npEl = document.getElementById("np");
+  const npName = document.getElementById("npName");
+  const npStatus = document.getElementById("npStatus");
+  const npAv = document.getElementById("npAv");
+
+  let stations = [];     // görüntülenen liste
+  let current = null;    // çalan istasyon
+  let activeTab = "tr";
+  let favs = loadFavs();
+
+  const ICONS = {
+    play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>'
+  };
+  function setPlayIcon(playing) { playBtn.innerHTML = playing ? ICONS.pause : ICONS.play; }
+  setPlayIcon(false);
+
+  function loadFavs() { try { return JSON.parse(localStorage.getItem("radio.favs") || "[]"); } catch (e) { return []; } }
+  function saveFavs() { try { localStorage.setItem("radio.favs", JSON.stringify(favs)); } catch (e) {} }
+  function isFav(s) { return favs.some(f => f.stationuuid === s.stationuuid); }
+  function toggleFav(s) {
+    if (isFav(s)) favs = favs.filter(f => f.stationuuid !== s.stationuuid);
+    else favs.unshift(slim(s));
+    saveFavs();
+    if (activeTab === "fav") render(favs);
+    else render(stations);
+  }
+  function slim(s) {
+    return { stationuuid: s.stationuuid, name: s.name, url_resolved: s.url_resolved || s.url,
+             favicon: s.favicon, country: s.country, codec: s.codec, bitrate: s.bitrate, homepage: s.homepage };
+  }
+
+  // ---------- API ----------
+  async function resolveServers() {
+    try {
+      const r = await fetch("https://all.api.radio-browser.info/json/servers", { cache: "no-store" });
+      if (r.ok) {
+        const list = await r.json();
+        const names = (list || []).map(s => s && s.name ? "https://" + s.name : null).filter(Boolean);
+        const uniq = Array.from(new Set(names));
+        if (uniq.length) { uniq.sort(() => Math.random() - 0.5); bases = uniq.concat(FALLBACK_BASES); }
+      }
+    } catch (e) { /* fallback bases kullanılır */ }
+  }
+  async function apiGet(path) {
+    let lastErr;
+    for (let i = 0; i < bases.length; i++) {
+      try {
+        const r = await fetch(bases[i] + path, { cache: "no-store" });
+        if (r.ok) return await r.json();
+      } catch (e) { lastErr = e; }
+    }
+    throw lastErr || new Error("Sunucuya ulaşılamadı");
+  }
+
+  function loadingState() { listEl.innerHTML = '<div class="state"><div class="spinner"></div>İstasyonlar yükleniyor…</div>'; }
+  function errorState(retry) {
+    listEl.innerHTML = '<div class="state">İstasyon listesi alınamadı.<br>İnternet bağlantısını kontrol edip tekrar deneyin.<br><button id="retry">Tekrar Dene</button></div>';
+    const b = document.getElementById("retry"); if (b) b.onclick = retry;
+  }
+
+  async function loadTab(tab) {
+    activeTab = tab;
+    document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+    qEl.value = "";
+    if (tab === "fav") { render(favs); return; }
+    loadingState();
+    const path = tab === "tr"
+      ? "/json/stations/bycountrycodeexact/TR?limit=100&hidebroken=true&order=clickcount&reverse=true"
+      : "/json/stations/topclick/60";
+    try {
+      const data = await apiGet(path);
+      stations = dedupe(data || []);
+      render(stations);
+    } catch (e) { errorState(() => loadTab(tab)); }
+  }
+
+  let searchTimer = null;
+  function onSearch() {
+    const q = qEl.value.trim();
+    clearTimeout(searchTimer);
+    if (!q) { loadTab(activeTab); return; }
+    searchTimer = setTimeout(async () => {
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      loadingState();
+      try {
+        const data = await apiGet("/json/stations/search?name=" + encodeURIComponent(q) + "&limit=80&hidebroken=true&order=clickcount&reverse=true");
+        stations = dedupe(data || []);
+        if (!stations.length) listEl.innerHTML = '<div class="state">"' + escapeHtml(q) + '" için sonuç yok.</div>';
+        else render(stations);
+      } catch (e) { errorState(onSearch); }
+    }, 350);
+  }
+
+  function dedupe(arr) {
+    const seen = new Set(); const out = [];
+    for (const s of arr) {
+      const u = s.url_resolved || s.url;
+      if (!u || seen.has(s.stationuuid)) continue;
+      seen.add(s.stationuuid); out.push(s);
+    }
+    return out;
+  }
+
+  // ---------- Render ----------
+  function escapeHtml(t) { return String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+  function avatarColor(name) { let h = 0; for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360; return "hsl(" + h + ",45%,42%)"; }
+
+  function render(arr) {
+    stations = arr;
+    if (!arr.length) {
+      listEl.innerHTML = activeTab === "fav"
+        ? '<div class="state">Henüz favori yok.<br>İstasyonların yanındaki ☆ ile ekleyin.</div>'
+        : '<div class="state">Liste boş.</div>';
+      return;
+    }
+    let html = "";
+    arr.forEach((s, i) => {
+      const tags = [s.country, s.codec, s.bitrate ? s.bitrate + "k" : ""].filter(Boolean).join(" · ");
+      const letter = (s.name || "?").trim().charAt(0).toUpperCase() || "?";
+      const av = s.favicon
+        ? '<img class="avatar" src="' + escapeHtml(s.favicon) + '" loading="lazy" onerror="this.outerHTML=window.__radioLetter(' + i + ')">'
+        : letterAvatar(s);
+      const playing = current && current.stationuuid === s.stationuuid ? " playing" : "";
+      html += '<div class="row' + playing + '" data-idx="' + i + '">' +
+        av +
+        '<div class="meta"><div class="nm">' + escapeHtml(s.name || "Adsız") + '</div><div class="tg">' + escapeHtml(tags) + '</div></div>' +
+        '<button class="star' + (isFav(s) ? " on" : "") + '" data-fav="' + i + '">' + (isFav(s) ? "★" : "☆") + '</button>' +
+        '</div>';
+    });
+    listEl.innerHTML = html;
+  }
+  function letterAvatar(s) {
+    const letter = (s.name || "?").trim().charAt(0).toUpperCase() || "?";
+    return '<div class="avatar letter" style="background:' + avatarColor(s.name || "?") + '">' + escapeHtml(letter) + '</div>';
+  }
+  window.__radioLetter = function (i) { return letterAvatar(stations[i] || { name: "?" }); };
+
+  listEl.addEventListener("click", e => {
+    const fav = e.target.closest("[data-fav]");
+    if (fav) { e.stopPropagation(); toggleFav(stations[+fav.dataset.fav]); return; }
+    const row = e.target.closest(".row");
+    if (row) play(stations[+row.dataset.idx]);
+  });
+
+  // ---------- Oynatma ----------
+  function setStatus(text, cls) {
+    npName.textContent = current ? current.name : "Bir istasyon seçin";
+    npStatus.textContent = text;
+    npEl.classList.remove("live", "err");
+    if (cls) npEl.classList.add(cls);
+  }
+  function updateAvatar(s) {
+    if (s && s.favicon) npAv.innerHTML = '<img src="' + escapeHtml(s.favicon) + '" onerror="this.remove();this.parentNode.classList.add(\'empty\')">', npAv.classList.remove("empty");
+    else { npAv.innerHTML = ""; npAv.classList.add("empty"); }
+  }
+
+  function play(s) {
+    if (!s) return;
+    const url = s.url_resolved || s.url;
+    if (!url) { return; }
+    current = s;
+    render(stations);
+    updateAvatar(s);
+    setStatus("Bağlanıyor…", null);
+    if (location.protocol === "https:" && url.indexOf("http:") === 0) {
+      setStatus("Bu istasyon HTTP yayını — güvenli sayfada çalmayabilir", "err");
+    }
+    audio.src = url;
+    const p = audio.play();
+    if (p && p.catch) p.catch(() => setStatus("Çalınamadı — başka istasyon deneyin", "err"));
+    setPlayIcon(true);
+    countClick(s);
+  }
+  function countClick(s) {
+    if (!s.stationuuid) return;
+    apiGet("/json/url/" + s.stationuuid).catch(() => {});
+  }
+  function togglePlay() {
+    if (!current) { if (stations.length) play(stations[0]); return; }
+    if (audio.paused) { const p = audio.play(); if (p && p.catch) p.catch(() => {}); setPlayIcon(true); }
+    else { audio.pause(); setPlayIcon(false); }
+  }
+
+  audio.addEventListener("playing", () => { setStatus("Canlı", "live"); setPlayIcon(true); });
+  audio.addEventListener("waiting", () => setStatus("Tamponlanıyor…", null));
+  audio.addEventListener("pause", () => { if (current) setStatus("Duraklatıldı", null); setPlayIcon(false); });
+  audio.addEventListener("error", () => setStatus("Çalınamadı — başka istasyon deneyin", "err"));
+
+  playBtn.addEventListener("click", togglePlay);
+  volEl.addEventListener("input", () => { audio.volume = volEl.value / 100; });
+  audio.volume = volEl.value / 100;
+  qEl.addEventListener("input", onSearch);
+  document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => loadTab(t.dataset.tab)));
+
+  // ---------- Başlat ----------
+  (async function init() {
+    await resolveServers();
+    loadTab("tr");
+  })();
+
+  // test kancası
+  if (typeof window !== "undefined" && window.__RADIOTEST__) {
+    window.__RADIO = { render: render, play: play, dedupe: dedupe, toggleFav: toggleFav, get current() { return current; }, get favs() { return favs; } };
+  }
+})();
+</script>
+</body>
+</html>
