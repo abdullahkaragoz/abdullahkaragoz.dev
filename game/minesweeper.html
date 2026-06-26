@@ -105,6 +105,35 @@
 <script>
 "use strict";
 (function () {
+  // ---------- Dil (i18n) ----------
+  const I18N = {
+    tr: {
+      menuGame: "Oyun", menuHelp: "Yardım",
+      miNew: "Yeni", miAcemi: "Acemi", miOrta: "Orta", miUzman: "Uzman",
+      miQm: "Soru İşaretleri (?)", miAbout: "Hakkında",
+      flag: "Bayrak",
+      flagTitle: "Bayrak modu — açıkken tek dokunuş bayrak koyar",
+      newGameAria: "Yeni oyun",
+      about: "Mayın Tarlası\nKlasik Windows tarzı.\n\nSol tık: aç · Sağ tık: bayrak/soru\nSayı üzerine sol tık: çevreyi aç (chord)"
+    },
+    en: {
+      menuGame: "Game", menuHelp: "Help",
+      miNew: "New", miAcemi: "Beginner", miOrta: "Intermediate", miUzman: "Expert",
+      miQm: "Question marks (?)", miAbout: "About",
+      flag: "Flag",
+      flagTitle: "Flag mode — when on, a tap places a flag",
+      newGameAria: "New game",
+      about: "Minesweeper\nClassic Windows style.\n\nLeft click: reveal · Right click: flag/question\nLeft click on a number: chord (clear neighbors)"
+    }
+  };
+  function tx(k) { return (I18N[LANG] && I18N[LANG][k] != null) ? I18N[LANG][k] : I18N.tr[k]; }
+  function detectLang() {
+    try { var s = JSON.parse(localStorage.getItem('portfolioos.v1') || 'null'); if (s && (s.lang === 'tr' || s.lang === 'en')) return s.lang; } catch (e) {}
+    var n = (navigator.language || 'tr').toLowerCase();
+    return n.indexOf('en') === 0 ? 'en' : 'tr';
+  }
+  var LANG = detectLang();
+
   // ---------- Zorluk seviyeleri ----------
   const LEVELS = {
     acemi:  { cols: 9,  rows: 9,  mines: 10, label: "Acemi" },
@@ -410,7 +439,7 @@
 
   // ---------- Dokunmatik (mobil) ----------
   const flagToggle = document.getElementById("flagToggle");
-  flagToggle.innerHTML = flagSVG() + '<span>Bayrak</span>';
+  flagToggle.innerHTML = flagSVG() + '<span id="flagLabel"></span>';
   flagToggle.addEventListener("click", e => { e.stopPropagation(); flagMode = !flagMode; flagToggle.classList.toggle("on", flagMode); closeMenus(); });
 
   let touchData = null;
@@ -469,13 +498,13 @@
   function chk(on) { return '<span class="chk">' + (on ? "✓" : "") + "</span>"; }
   function renderGameMenu() {
     ddGame.innerHTML =
-      '<div class="mi" data-act="new"><span class="chk"></span>Yeni<span style="margin-left:auto;padding-left:18px;opacity:.7">F2</span></div>' +
+      '<div class="mi" data-act="new"><span class="chk"></span>' + tx("miNew") + '<span style="margin-left:auto;padding-left:18px;opacity:.7">F2</span></div>' +
       '<div class="msep"></div>' +
-      '<div class="mi" data-act="acemi">' + chk(G.level === "acemi") + 'Acemi</div>' +
-      '<div class="mi" data-act="orta">' + chk(G.level === "orta") + 'Orta</div>' +
-      '<div class="mi" data-act="uzman">' + chk(G.level === "uzman") + 'Uzman</div>' +
+      '<div class="mi" data-act="acemi">' + chk(G.level === "acemi") + tx("miAcemi") + '</div>' +
+      '<div class="mi" data-act="orta">' + chk(G.level === "orta") + tx("miOrta") + '</div>' +
+      '<div class="mi" data-act="uzman">' + chk(G.level === "uzman") + tx("miUzman") + '</div>' +
       '<div class="msep"></div>' +
-      '<div class="mi" data-act="qm">' + chk(G.questionMarks) + 'Soru İşaretleri (?)</div>';
+      '<div class="mi" data-act="qm">' + chk(G.questionMarks) + tx("miQm") + '</div>';
   }
   function openMenu(which) {
     closeMenus();
@@ -485,7 +514,7 @@
       ddGame.style.left = r.left + "px"; ddGame.style.top = r.bottom + "px";
       ddGame.classList.remove("hidden"); mGame.classList.add("open");
     } else {
-      ddHelp.innerHTML = '<div class="mi" data-act="about"><span class="chk"></span>Hakkında</div>';
+      ddHelp.innerHTML = '<div class="mi" data-act="about"><span class="chk"></span>' + tx("miAbout") + '</div>';
       const r = mHelp.getBoundingClientRect();
       ddHelp.style.left = r.left + "px"; ddHelp.style.top = r.bottom + "px";
       ddHelp.classList.remove("hidden"); mHelp.classList.add("open");
@@ -510,14 +539,34 @@
   });
   ddHelp.addEventListener("click", e => {
     const mi = e.target.closest(".mi"); if (!mi) return;
-    if (mi.dataset.act === "about") alert("Mayın Tarlası\nKlasik Windows tarzı.\n\nSol tık: aç · Sağ tık: bayrak/soru\nSayı üzerine sol tık: çevreyi aç (chord)");
+    if (mi.dataset.act === "about") alert(tx("about"));
     closeMenus();
   });
   document.addEventListener("click", closeMenus);
   document.addEventListener("keydown", e => { if (e.key === "F2") { e.preventDefault(); newGame(); } });
   boardEl.addEventListener("contextmenu", e => e.preventDefault());
 
+  // ---------- Dil uygulama ----------
+  function applyTexts() {
+    mGame.textContent = tx("menuGame");
+    mHelp.textContent = tx("menuHelp");
+    var fl = document.getElementById("flagLabel");
+    if (fl) fl.textContent = tx("flag");
+    flagToggle.title = tx("flagTitle");
+    faceEl.setAttribute("aria-label", tx("newGameAria"));
+    // Açık dropdown varsa yeniden üret
+    if (!ddGame.classList.contains("hidden")) renderGameMenu();
+    if (!ddHelp.classList.contains("hidden")) {
+      ddHelp.innerHTML = '<div class="mi" data-act="about"><span class="chk"></span>' + tx("miAbout") + '</div>';
+    }
+  }
+  window.addEventListener("message", function (e) {
+    var d = e && e.data;
+    if (d && d.type === "setLang" && (d.lang === "tr" || d.lang === "en")) { LANG = d.lang; applyTexts(); }
+  });
+
   // ---------- Başla ----------
+  applyTexts();
   newGame("acemi");
 })();
 </script>

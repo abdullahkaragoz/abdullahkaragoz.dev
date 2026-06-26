@@ -556,7 +556,7 @@ class Component extends DCLogic {
   restore() { try { return JSON.parse(localStorage.getItem('portfolioos.v1') || 'null'); } catch(e) { return null; } }
   persist() { try { const open = {}; Object.keys(this.state.wins).forEach(id => { const w = this.state.wins[id]; if (w && w.open) open[id] = {x:w.x,y:w.y,w:w.w,h:w.h,max:!!w.max,min:!!w.min}; }); localStorage.setItem('portfolioos.v1', JSON.stringify({ lang:this.state.lang, wall:this.state.wall, accent:this.state.accent, dockSize:this.state.dockSize, open })); } catch(e) {} }
 
-  setLang(l) { this.setState({ lang:l }, () => { this.tick(); this.persist(); }); }
+  setLang(l) { this.setState({ lang:l }, () => { this.tick(); this.persist(); try { document.querySelectorAll('iframe').forEach(f => { try { f.contentWindow && f.contentWindow.postMessage({ type:'setLang', lang:l }, '*'); } catch (e) {} }); } catch (e) {} }); }
 
   openMenu(id, e) { const x = (e && e.currentTarget) ? e.currentTarget.getBoundingClientRect().left : 8; const vw = window.innerWidth || 1280; const left = Math.max(6, Math.min(x, vw - 290)); this.setState(s => ({ menuOpen: s.menuOpen === id ? null : id, menuLeft: left, gamesOpen:false })); }
   hoverMenu(id, e) { if (this.state.menuOpen && this.state.menuOpen !== id) { const x = e.currentTarget.getBoundingClientRect().left; const vw = window.innerWidth || 1280; this.setState({ menuOpen:id, menuLeft: Math.max(6, Math.min(x, vw - 290)) }); } }

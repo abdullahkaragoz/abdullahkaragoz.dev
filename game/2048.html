@@ -81,12 +81,12 @@
     <header>
       <div class="title">2048</div>
       <div class="scores">
-        <div class="score-box"><div class="lab">Skor</div><div class="val" id="score">0</div></div>
-        <div class="score-box"><div class="lab">En İyi</div><div class="val" id="best">0</div></div>
+        <div class="score-box"><div class="lab" id="labScore">Skor</div><div class="val" id="score">0</div></div>
+        <div class="score-box"><div class="lab" id="labBest">En İyi</div><div class="val" id="best">0</div></div>
       </div>
     </header>
     <div class="bar">
-      <p>Blokları birleştir, <b>2048</b>'e ulaş!</p>
+      <p id="tagline">Blokları birleştir, <b>2048</b>'e ulaş!</p>
       <button id="newGame">Yeni Oyun</button>
     </div>
     <div id="board">
@@ -101,13 +101,44 @@
       </div>
     </div>
     <div class="bar" style="margin-top:12px;justify-content:center">
-      <p>Hareket: <b>ok tuşları</b> / <b>WASD</b> · mobilde <b>kaydır</b></p>
+      <p id="hint">Hareket: <b>ok tuşları</b> / <b>WASD</b> · mobilde <b>kaydır</b></p>
     </div>
   </div>
 
 <script>
 "use strict";
 (function () {
+  // ---------- i18n ----------
+  const I18N = {
+    tr: {
+      labScore: "Skor",
+      labBest: "En İyi",
+      tagline: 'Blokları birleştir, <b>2048</b>\'e ulaş!',
+      newGame: "Yeni Oyun",
+      hint: "Hareket: <b>ok tuşları</b> / <b>WASD</b> · mobilde <b>kaydır</b>",
+      win: "2048! Kazandınız 🎉",
+      keep: "Devam Et",
+      over: "Oyun bitti"
+    },
+    en: {
+      labScore: "Score",
+      labBest: "Best",
+      tagline: 'Merge the tiles to reach <b>2048</b>!',
+      newGame: "New Game",
+      hint: "Move: <b>arrow keys</b> / <b>WASD</b> · <b>swipe</b> on mobile",
+      win: "2048! You win 🎉",
+      keep: "Keep going",
+      over: "Game over"
+    }
+  };
+  function tx(k) { return (I18N[LANG] && I18N[LANG][k] != null) ? I18N[LANG][k] : I18N.tr[k]; }
+  function detectLang() {
+    try { var s = JSON.parse(localStorage.getItem('portfolioos.v1') || 'null'); if (s && (s.lang === 'tr' || s.lang === 'en')) return s.lang; } catch (e) {}
+    var n = (navigator.language || 'tr').toLowerCase();
+    return n.indexOf('en') === 0 ? 'en' : 'tr';
+  }
+  var LANG = detectLang();
+
   const SIZE = 4;
   const boardEl = document.getElementById("board");
   const bgEl = document.getElementById("bg");
@@ -282,12 +313,37 @@
 
   function showOverlay(isWin) {
     over = !isWin;
-    ovTitle.textContent = isWin ? "2048! Kazandınız 🎉" : "Oyun bitti";
+    ovTitle.textContent = isWin ? tx("win") : tx("over");
     overlayEl.classList.toggle("win", isWin);
     ovKeep.style.display = isWin ? "" : "none";
     overlayEl.classList.add("show");
   }
   function hideOverlay() { overlayEl.classList.remove("show"); }
+
+  function applyTexts() {
+    try { document.documentElement.lang = LANG; } catch (e) {}
+    var set = function (id, key, html) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (html) el.innerHTML = tx(key); else el.textContent = tx(key);
+    };
+    set("labScore", "labScore", false);
+    set("labBest", "labBest", false);
+    set("tagline", "tagline", true);
+    set("newGame", "newGame", false);
+    set("ovNew", "newGame", false);
+    set("ovKeep", "keep", false);
+    set("hint", "hint", true);
+    // Overlay görünürken dil değişirse mevcut başlığı da güncelle
+    if (overlayEl.classList.contains("show")) {
+      ovTitle.textContent = overlayEl.classList.contains("win") ? tx("win") : tx("over");
+    }
+  }
+
+  window.addEventListener("message", function (e) {
+    var d = e && e.data;
+    if (d && d.type === "setLang" && (d.lang === "tr" || d.lang === "en")) { LANG = d.lang; applyTexts(); }
+  });
 
   // ---------- Girdi ----------
   const KEY = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down", a: "left", d: "right", w: "up", s: "down" };
@@ -321,6 +377,7 @@
 
   buildBg();
   newGame();
+  applyTexts();
 
   // test kancası (yalnızca headless doğrulama)
   if (INSTANT) {

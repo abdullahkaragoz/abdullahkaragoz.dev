@@ -83,6 +83,45 @@
 (function () {
   "use strict";
 
+  /* ---------- DIL (i18n) ---------- */
+  const I18N = {
+    tr: {
+      soundLabel: "Ses",
+      introHtml: "Trafikten sıyrıl, yola çık!<br>Araçlara ve yol kenarına çarpma.<br>Yeşil araçlar yakıt verir.",
+      start: "BAŞLA",
+      again: "TEKRAR",
+      hintHtml: "Klavye: ◀ ▶ direksiyon &nbsp;·&nbsp; ▲ gaz &nbsp;·&nbsp; ▼ fren<br>\n        Mobil: arabayı parmağınla sürükle ya da tuşlar",
+      brake: "FREN",
+      gas: "GAZ",
+      outOfFuel: "YAKIT BİTTİ",
+      offRoad: "YOLDAN ÇIKTIN",
+      crashed: "ÇARPTIN!",
+      score: "Skor:",
+      record: "Rekor:"
+    },
+    en: {
+      soundLabel: "Sound",
+      introHtml: "Weave through traffic, hit the road!<br>Avoid cars and the roadside.<br>Green cars give fuel.",
+      start: "START",
+      again: "AGAIN",
+      hintHtml: "Keyboard: ◀ ▶ steer &nbsp;·&nbsp; ▲ gas &nbsp;·&nbsp; ▼ brake<br>\n        Mobile: drag the car with your finger or use buttons",
+      brake: "BRAKE",
+      gas: "GAS",
+      outOfFuel: "OUT OF FUEL",
+      offRoad: "OFF THE ROAD",
+      crashed: "CRASHED!",
+      score: "Score:",
+      record: "Record:"
+    }
+  };
+  function tx(k) { return (I18N[LANG] && I18N[LANG][k] != null) ? I18N[LANG][k] : I18N.tr[k]; }
+  function detectLang() {
+    try { var s = JSON.parse(localStorage.getItem("portfolioos.v1") || "null"); if (s && (s.lang === "tr" || s.lang === "en")) return s.lang; } catch (e) {}
+    var n = (navigator.language || "tr").toLowerCase();
+    return n.indexOf("en") === 0 ? "en" : "tr";
+  }
+  var LANG = detectLang();
+
   const VW = 512, VH = 480;
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
@@ -91,6 +130,9 @@
   const ovText = document.getElementById("ovText");
   const startBtn = document.getElementById("startBtn");
   const soundBtn = document.getElementById("soundBtn");
+  const ovHint = document.querySelector(".overlay .hint");
+  const cBrakeBtn = document.getElementById("cBrake");
+  const cGasBtn = document.getElementById("cGas");
 
   // ---- yerlesim ----
   const RAIL_X = 12, RAIL_W = 22;
@@ -301,6 +343,7 @@
   /* ---------- DURUM ---------- */
   let player, enemies, scenery, speed, dist, score, hi, fuel, running, dead, raf, lastT, scrollY, spawnT, scenT, warnT;
   let steerLeft = false, steerRight = false, gas = false, brake = false, dragX = null;
+  let lastReason = null; // son oyun-bitti nedeni (dil degisiminde overlay'i tekrar kurmak icin)
 
   const SPD_MIN = 260, SPD_MAX = 640;
   hi = parseInt(localStorage.getItem("roadHi") || "0", 10);
@@ -465,19 +508,25 @@
     if (running) raf = requestAnimationFrame(loop);
   }
   function start() {
-    reset(); running = true; dead = false;
+    reset(); running = true; dead = false; lastReason = null;
     overlay.classList.add("hidden");
     Sound.warm(); Sound.go(); Sound.engineStart();
     lastT = 0; cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
   }
+  function gameOverTitle(reason) {
+    return reason === "yakit" ? tx("outOfFuel") : (reason === "kenar" ? tx("offRoad") : tx("crashed"));
+  }
+  function gameOverText() {
+    return tx("score") + ' <b style="color:#ffd23e">' + pad(score, 6) + '</b><br>' + tx("record") + ' <b style="color:#6fe08a">' + pad(hi, 6) + '</b>';
+  }
   function gameOver(reason) {
     if (dead) return; dead = true; running = false;
+    lastReason = reason;
     cancelAnimationFrame(raf); Sound.crash();
     if (score > hi) { hi = score; localStorage.setItem("roadHi", String(hi)); }
-    const ttl = reason === "yakit" ? "YAKIT BİTTİ" : (reason === "kenar" ? "YOLDAN ÇIKTIN" : "ÇARPTIN!");
-    overlay.querySelector("h2").textContent = ttl;
-    ovText.innerHTML = 'Skor: <b style="color:#ffd23e">' + pad(score, 6) + '</b><br>Rekor: <b style="color:#6fe08a">' + pad(hi, 6) + '</b>';
-    startBtn.textContent = "TEKRAR";
+    overlay.querySelector("h2").textContent = gameOverTitle(reason);
+    ovText.innerHTML = gameOverText();
+    startBtn.textContent = tx("again");
     overlay.classList.remove("hidden");
     draw();
   }
@@ -524,8 +573,38 @@
   startBtn.addEventListener("click", start);
   window.addEventListener("resize", resize);
 
+  /* ---------- DIL UYGULA (sabit DOM metinleri) ---------- */
+  function applyTexts() {
+    document.documentElement.setAttribute("lang", LANG);
+    soundBtn.setAttribute("title", tx("soundLabel"));
+    soundBtn.setAttribute("aria-label", tx("soundLabel"));
+    if (ovHint) ovHint.innerHTML = tx("hintHtml");
+    cBrakeBtn.textContent = tx("brake");
+    cGasBtn.textContent = tx("gas");
+    if (dead) {
+      // oyun-bitti ekrani acik: skor + baslik + "TEKRAR"
+      overlay.querySelector("h2").textContent = gameOverTitle(lastReason);
+      ovText.innerHTML = gameOverText();
+      startBtn.textContent = tx("again");
+    } else if (!running) {
+      // baslangic ekrani: tanitim metni + "BASLA"
+      overlay.querySelector("h2").textContent = "ROAD FIGHTER";
+      ovText.innerHTML = tx("introHtml");
+      startBtn.textContent = tx("start");
+    }
+  }
+
+  window.addEventListener("message", function (e) {
+    var d = e && e.data;
+    if (d && d.type === "setLang" && (d.lang === "tr" || d.lang === "en")) {
+      LANG = d.lang;
+      applyTexts();
+    }
+  });
+
   buildAssets();
   reset(); resize(); draw();
+  applyTexts();
 })();
 </script>
 </body>

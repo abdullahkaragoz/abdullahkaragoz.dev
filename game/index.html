@@ -108,8 +108,8 @@
 <body>
   <h1>NEON YILAN</h1>
   <div class="scorebar">
-    <span>Skor: <b id="score">0</b></span>
-    <span class="hi">Rekor: <b id="hi">0</b></span>
+    <span><span id="scoreLabel">Skor:</span> <b id="score">0</b></span>
+    <span class="hi"><span id="hiLabel">Rekor:</span> <b id="hi">0</b></span>
     <button id="soundBtn" class="soundbtn" title="Ses aç/kapat" aria-label="Ses">🔊</button>
   </div>
 
@@ -137,6 +137,56 @@
 (function () {
   "use strict";
 
+  /* ---------- DİL / I18N ---------- */
+  const I18N = {
+    tr: {
+      brand: "Neon Yılan",
+      scoreLabel: "Skor:",
+      hiLabel: "Rekor:",
+      soundTitle: "Ses aç/kapat",
+      soundAria: "Ses",
+      ovStartText: "Yemleri topla, uzadıkça hızlan.<br>Duvara ya da kendine çarpma!",
+      btnStart: "BAŞLA",
+      hint: 'Klavye: Ok tuşları / WASD &nbsp;•&nbsp; Boşluk: duraklat &nbsp;•&nbsp; Enter: yeniden<br>Mobil: ekranda kaydır veya yön tuşları',
+      gameOver: "Oyun Bitti",
+      btnRestart: "TEKRAR OYNA",
+      paused: "Duraklatıldı",
+      pausedText: "Devam etmek için Boşluk'a bas veya BAŞLA'ya dokun.",
+      btnContinue: "DEVAM",
+      yourScore: "Skorun:",
+      recordInline: "Rekor:"
+    },
+    en: {
+      brand: "Neon Snake",
+      scoreLabel: "Score:",
+      hiLabel: "Best:",
+      soundTitle: "Toggle sound",
+      soundAria: "Sound",
+      ovStartText: "Collect the food and speed up as you grow.<br>Don't hit the walls or yourself!",
+      btnStart: "START",
+      hint: 'Keyboard: Arrow keys / WASD &nbsp;•&nbsp; Space: pause &nbsp;•&nbsp; Enter: restart<br>Mobile: swipe on screen or use the arrow buttons',
+      gameOver: "Game Over",
+      btnRestart: "PLAY AGAIN",
+      paused: "Paused",
+      pausedText: "Press Space or tap START to continue.",
+      btnContinue: "CONTINUE",
+      yourScore: "Your score:",
+      recordInline: "Best:"
+    }
+  };
+  function tx(k) {
+    return (I18N[LANG] && I18N[LANG][k] != null) ? I18N[LANG][k] : I18N.tr[k];
+  }
+  function detectLang() {
+    try {
+      var s = JSON.parse(localStorage.getItem('portfolioos.v1') || 'null');
+      if (s && (s.lang === 'tr' || s.lang === 'en')) return s.lang;
+    } catch (e) {}
+    var n = (navigator.language || 'tr').toLowerCase();
+    return n.indexOf('en') === 0 ? 'en' : 'tr';
+  }
+  var LANG = detectLang();
+
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
   const scoreEl = document.getElementById("score");
@@ -146,6 +196,10 @@
   const ovText = document.getElementById("ovText");
   const startBtn = document.getElementById("startBtn");
   const soundBtn = document.getElementById("soundBtn");
+  const titleH1 = document.querySelector("h1");
+  const scoreLabelEl = document.getElementById("scoreLabel");
+  const hiLabelEl = document.getElementById("hiLabel");
+  const hintEl = document.querySelector(".hint");
 
   /* ---------- SES (Web Audio, harici dosya yok) ---------- */
   const Sound = (function () {
@@ -236,6 +290,36 @@
   }
 
   let snake, dir, nextDir, food, score, hi, speed, timer, running, paused, dead;
+  let overlayState = "start"; // "start" | "over" | "paused"
+
+  // başlangıç ekranı metinlerini (overlay) güncelle
+  function renderOverlay() {
+    if (overlayState === "over") {
+      ovTitle.textContent = tx("gameOver");
+      ovText.innerHTML = `${tx("yourScore")} <b style="color:#ff2e88">${score}</b><br>${tx("recordInline")} <b style="color:#ffe600">${hi}</b>`;
+      startBtn.textContent = tx("btnRestart");
+    } else if (overlayState === "paused") {
+      ovTitle.textContent = tx("paused");
+      ovText.textContent = tx("pausedText");
+      startBtn.textContent = tx("btnContinue");
+    } else {
+      ovTitle.textContent = tx("brand");
+      ovText.innerHTML = tx("ovStartText");
+      startBtn.textContent = tx("btnStart");
+    }
+  }
+
+  // tüm sabit DOM metinlerini diline göre uygula
+  function applyTexts() {
+    document.documentElement.lang = LANG;
+    if (titleH1) titleH1.textContent = tx("brand").toUpperCase();
+    document.title = tx("brand");
+    if (scoreLabelEl) scoreLabelEl.textContent = tx("scoreLabel");
+    if (hiLabelEl) hiLabelEl.textContent = tx("hiLabel");
+    if (soundBtn) { soundBtn.title = tx("soundTitle"); soundBtn.setAttribute("aria-label", tx("soundAria")); }
+    if (hintEl) hintEl.innerHTML = tx("hint");
+    renderOverlay();
+  }
 
   hi = parseInt(localStorage.getItem("neonSnakeHi") || "0", 10);
   hiEl.textContent = hi;
@@ -347,9 +431,8 @@
       localStorage.setItem("neonSnakeHi", String(hi));
       hiEl.textContent = hi;
     }
-    ovTitle.textContent = "Oyun Bitti";
-    ovText.innerHTML = `Skorun: <b style="color:#ff2e88">${score}</b><br>Rekor: <b style="color:#ffe600">${hi}</b>`;
-    startBtn.textContent = "TEKRAR OYNA";
+    overlayState = "over";
+    renderOverlay();
     overlay.classList.remove("hidden");
   }
 
@@ -369,9 +452,8 @@
     Sound.pause();
     if (paused) {
       clearInterval(timer);
-      ovTitle.textContent = "Duraklatıldı";
-      ovText.textContent = "Devam etmek için Boşluk'a bas veya BAŞLA'ya dokun.";
-      startBtn.textContent = "DEVAM";
+      overlayState = "paused";
+      renderOverlay();
       overlay.classList.remove("hidden");
     } else {
       overlay.classList.add("hidden");
@@ -427,6 +509,16 @@
     if (paused) { togglePause(); } else { start(); }
   });
 
+  // üst sayfadan dil değişikliği bildirimi
+  window.addEventListener("message", function (e) {
+    var d = e && e.data;
+    if (d && d.type === "setLang" && (d.lang === "tr" || d.lang === "en")) {
+      LANG = d.lang;
+      applyTexts();
+    }
+  });
+
+  applyTexts();
   window.addEventListener("resize", resize);
   resize();
   draw();

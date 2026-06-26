@@ -97,8 +97,8 @@
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M16 4 L7 8"/><rect x="3" y="8" width="18" height="12" rx="2"/><circle cx="8" cy="14" r="3"/><line x1="15" y1="12" x2="18" y2="12"/><line x1="15" y1="16" x2="18" y2="16"/>
         </svg>
-        <h1>Radyo</h1>
-        <span class="sub">canlı yayın</span>
+        <h1 id="appTitle">Radyo</h1>
+        <span class="sub" id="subLabel">canlı yayın</span>
       </div>
       <div class="search">
         <svg class="si" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
@@ -155,6 +155,40 @@
   let activeTab = "tr";
   let favs = loadFavs();
 
+  // ---------- Dil (TR / EN) ----------
+  let statusKey = "ready", statusCls = null;
+  const T = {
+    tr: { title:"Radyo", sub:"canlı yayın", search:"İstasyon ara… (örn. jazz, türkçe, lofi)",
+      tabTr:"Türkiye", tabPop:"Popüler", tabFav:"Favoriler", pick:"Bir istasyon seçin",
+      ready:"Hazır", connecting:"Bağlanıyor…", live:"Canlı", buffering:"Tamponlanıyor…", paused:"Duraklatıldı",
+      cantPlay:"Çalınamadı — başka istasyon deneyin", httpWarn:"Bu istasyon HTTP yayını — güvenli sayfada çalmayabilir",
+      loading:"İstasyonlar yükleniyor…", errLoad:"İstasyon listesi alınamadı.<br>İnternet bağlantısını kontrol edip tekrar deneyin.",
+      retry:"Tekrar Dene", favEmpty:"Henüz favori yok.<br>İstasyonların yanındaki ☆ ile ekleyin.", listEmpty:"Liste boş.",
+      noResult:function (q) { return '"' + q + '" için sonuç yok.'; } },
+    en: { title:"Radio", sub:"live radio", search:"Search stations… (e.g. jazz, lofi, news)",
+      tabTr:"Turkey", tabPop:"Popular", tabFav:"Favorites", pick:"Pick a station",
+      ready:"Ready", connecting:"Connecting…", live:"Live", buffering:"Buffering…", paused:"Paused",
+      cantPlay:"Couldn't play — try another station", httpWarn:"HTTP stream — may not play on a secure page",
+      loading:"Loading stations…", errLoad:"Couldn't load stations.<br>Check your connection and try again.",
+      retry:"Retry", favEmpty:"No favorites yet.<br>Add stations with the ☆ next to them.", listEmpty:"List is empty.",
+      noResult:function (q) { return 'No results for "' + q + '".'; } }
+  };
+  function detectLang() {
+    try { const s = JSON.parse(localStorage.getItem("portfolioos.v1") || "null"); if (s && (s.lang === "tr" || s.lang === "en")) return s.lang; } catch (e) {}
+    const n = (navigator.language || "tr").toLowerCase(); return n.indexOf("en") === 0 ? "en" : "tr";
+  }
+  let LANG = detectLang();
+  function tr(k) { return T[LANG][k]; }
+  function applyStaticTexts() {
+    const a = document.getElementById("appTitle"); if (a) a.textContent = tr("title");
+    const sb = document.getElementById("subLabel"); if (sb) sb.textContent = tr("sub");
+    qEl.placeholder = tr("search");
+    document.querySelectorAll(".tab").forEach(el => {
+      const k = el.dataset.tab; el.textContent = k === "tr" ? tr("tabTr") : k === "pop" ? tr("tabPop") : tr("tabFav");
+    });
+    renderStatus();
+  }
+
   const ICONS = {
     play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
     pause: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>'
@@ -200,10 +234,10 @@
     throw lastErr || new Error("Sunucuya ulaşılamadı");
   }
 
-  function loadingState() { listEl.innerHTML = '<div class="state"><div class="spinner"></div>İstasyonlar yükleniyor…</div>'; }
-  function errorState(retry) {
-    listEl.innerHTML = '<div class="state">İstasyon listesi alınamadı.<br>İnternet bağlantısını kontrol edip tekrar deneyin.<br><button id="retry">Tekrar Dene</button></div>';
-    const b = document.getElementById("retry"); if (b) b.onclick = retry;
+  function loadingState() { listEl.innerHTML = '<div class="state"><div class="spinner"></div>' + tr("loading") + '</div>'; }
+  function errorState(retryFn) {
+    listEl.innerHTML = '<div class="state">' + tr("errLoad") + '<br><button id="retry">' + tr("retry") + '</button></div>';
+    const b = document.getElementById("retry"); if (b) b.onclick = retryFn;
   }
 
   async function loadTab(tab) {
@@ -233,7 +267,7 @@
       try {
         const data = await apiGet("/json/stations/search?name=" + encodeURIComponent(q) + "&limit=80&hidebroken=true&order=clickcount&reverse=true");
         stations = dedupe(data || []);
-        if (!stations.length) listEl.innerHTML = '<div class="state">"' + escapeHtml(q) + '" için sonuç yok.</div>';
+        if (!stations.length) listEl.innerHTML = '<div class="state">' + T[LANG].noResult(escapeHtml(q)) + '</div>';
         else render(stations);
       } catch (e) { errorState(onSearch); }
     }, 350);
@@ -257,8 +291,8 @@
     stations = arr;
     if (!arr.length) {
       listEl.innerHTML = activeTab === "fav"
-        ? '<div class="state">Henüz favori yok.<br>İstasyonların yanındaki ☆ ile ekleyin.</div>'
-        : '<div class="state">Liste boş.</div>';
+        ? '<div class="state">' + tr("favEmpty") + '</div>'
+        : '<div class="state">' + tr("listEmpty") + '</div>';
       return;
     }
     let html = "";
@@ -291,11 +325,12 @@
   });
 
   // ---------- Oynatma ----------
-  function setStatus(text, cls) {
-    npName.textContent = current ? current.name : "Bir istasyon seçin";
-    npStatus.textContent = text;
+  function setStatus(key, cls) { statusKey = key; statusCls = cls || null; renderStatus(); }
+  function renderStatus() {
+    npName.textContent = current ? current.name : tr("pick");
+    npStatus.textContent = tr(statusKey);
     npEl.classList.remove("live", "err");
-    if (cls) npEl.classList.add(cls);
+    if (statusCls) npEl.classList.add(statusCls);
   }
   function updateAvatar(s) {
     if (s && s.favicon) npAv.innerHTML = '<img src="' + escapeHtml(s.favicon) + '" onerror="this.remove();this.parentNode.classList.add(\'empty\')">', npAv.classList.remove("empty");
@@ -309,13 +344,13 @@
     current = s;
     render(stations);
     updateAvatar(s);
-    setStatus("Bağlanıyor…", null);
+    setStatus("connecting");
     if (location.protocol === "https:" && url.indexOf("http:") === 0) {
-      setStatus("Bu istasyon HTTP yayını — güvenli sayfada çalmayabilir", "err");
+      setStatus("httpWarn", "err");
     }
     audio.src = url;
     const p = audio.play();
-    if (p && p.catch) p.catch(() => setStatus("Çalınamadı — başka istasyon deneyin", "err"));
+    if (p && p.catch) p.catch(() => setStatus("cantPlay", "err"));
     setPlayIcon(true);
     countClick(s);
   }
@@ -329,10 +364,10 @@
     else { audio.pause(); setPlayIcon(false); }
   }
 
-  audio.addEventListener("playing", () => { setStatus("Canlı", "live"); setPlayIcon(true); });
-  audio.addEventListener("waiting", () => setStatus("Tamponlanıyor…", null));
-  audio.addEventListener("pause", () => { if (current) setStatus("Duraklatıldı", null); setPlayIcon(false); });
-  audio.addEventListener("error", () => setStatus("Çalınamadı — başka istasyon deneyin", "err"));
+  audio.addEventListener("playing", () => { setStatus("live", "live"); setPlayIcon(true); });
+  audio.addEventListener("waiting", () => setStatus("buffering"));
+  audio.addEventListener("pause", () => { if (current) setStatus("paused"); setPlayIcon(false); });
+  audio.addEventListener("error", () => setStatus("cantPlay", "err"));
 
   playBtn.addEventListener("click", togglePlay);
   volEl.addEventListener("input", () => { audio.volume = volEl.value / 100; });
@@ -340,7 +375,17 @@
   qEl.addEventListener("input", onSearch);
   document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => loadTab(t.dataset.tab)));
 
+  // ---------- Dil değişimini dinle (üst sayfadan) ----------
+  window.addEventListener("message", function (e) {
+    const d = e && e.data;
+    if (d && d.type === "setLang" && (d.lang === "tr" || d.lang === "en") && d.lang !== LANG) {
+      LANG = d.lang; applyStaticTexts(); render(stations);
+    }
+  });
+
   // ---------- Başlat ----------
+  applyStaticTexts();
+  setStatus("ready");
   (async function init() {
     await resolveServers();
     loadTab("tr");

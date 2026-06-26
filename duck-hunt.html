@@ -67,6 +67,59 @@
 <script>
 "use strict";
 (function () {
+  // ---------- Dil / i18n ----------
+  const I18N = {
+    tr: {
+      hint: 'Fareyle nişan alın, <b>tıklayarak</b> ateş edin. Menüde <b>A</b> (tek ördek) ya da <b>B</b> (çift ördek) modunu seçin &nbsp;·&nbsp; <b>S</b>: sesi aç/kapat &nbsp;·&nbsp; <b>P</b>: duraklat',
+      fullscreen: 'Tam ekran',
+      tagline: 'klasik nişancı oyunu',
+      modeA: 'MOD A', modeB: 'MOD B',
+      oneDuck: 'tek ördek', twoDucks: 'çift ördek',
+      clickOrAB: 'tıklayın ya da A / B tuşuna basın',
+      on: 'açık', off: 'kapalı',
+      round: 'TUR',
+      score: 'SKOR',
+      paused: 'DURAKLATILDI', resume: 'P ile devam edin',
+      passed: 'GEÇTİNİZ', perfect: 'MÜKEMMEL!', roundFailed: 'TUR BAŞARISIZ',
+      ducks: 'ördek', neededDucks: 'ördek gerekliydi',
+      gameOver: 'OYUN BİTTİ', reachedRound: 'Ulaşılan tur: ',
+      menuClick: 'menü için tıklayın / Enter'
+    },
+    en: {
+      hint: 'Aim with the mouse, <b>click</b> to shoot. In the menu pick <b>A</b> (one duck) or <b>B</b> (two ducks) &nbsp;·&nbsp; <b>S</b>: toggle sound &nbsp;·&nbsp; <b>P</b>: pause',
+      fullscreen: 'Fullscreen',
+      tagline: 'classic shooting game',
+      modeA: 'MODE A', modeB: 'MODE B',
+      oneDuck: 'one duck', twoDucks: 'two ducks',
+      clickOrAB: 'click or press A / B',
+      on: 'on', off: 'off',
+      round: 'ROUND',
+      score: 'SCORE',
+      paused: 'PAUSED', resume: 'press P to resume',
+      passed: 'PASSED', perfect: 'PERFECT!', roundFailed: 'ROUND FAILED',
+      ducks: 'ducks', neededDucks: 'ducks',
+      gameOver: 'GAME OVER', reachedRound: 'Reached round: ',
+      menuClick: 'click / Enter for menu'
+    }
+  };
+  function tx(k) { return (I18N[LANG] && I18N[LANG][k] != null) ? I18N[LANG][k] : I18N.tr[k]; }
+  function detectLang() {
+    try { var s = JSON.parse(localStorage.getItem('portfolioos.v1') || 'null'); if (s && (s.lang === 'tr' || s.lang === 'en')) return s.lang; } catch (e) {}
+    var n = (navigator.language || 'tr').toLowerCase();
+    return n.indexOf('en') === 0 ? 'en' : 'tr';
+  }
+  var LANG = detectLang();
+  function applyDomTexts() {
+    var hintEl = document.getElementById('hint');
+    if (hintEl) hintEl.innerHTML = tx('hint');
+    var fsEl = document.getElementById('fs');
+    if (fsEl) fsEl.textContent = tx('fullscreen');
+  }
+  window.addEventListener('message', function (e) {
+    var d = e && e.data;
+    if (d && d.type === 'setLang' && (d.lang === 'tr' || d.lang === 'en')) { LANG = d.lang; applyDomTexts(); }
+  });
+
   const canvas = document.getElementById("game");
   const stage = document.getElementById("stage");
   const ctx = canvas.getContext("2d", { alpha: false });
@@ -677,7 +730,7 @@
 
     ctx.textBaseline = "middle";
     ctx.font = "bold 9px 'Courier New', monospace"; ctx.textAlign = "left";
-    ctx.fillStyle = "#f3e6cf"; ctx.fillText("TUR " + G.round, 6, HUD_Y + 10);
+    ctx.fillStyle = "#f3e6cf"; ctx.fillText(tx("round") + " " + G.round, 6, HUD_Y + 10);
 
     for (let i = 0; i < 3; i++) {
       const on = i < G.bullets;
@@ -688,7 +741,7 @@
 
     ctx.fillStyle = "rgba(0,0,0,0.35)"; roundRect(W - 76, HUD_Y + 4, 72, 21, 4); ctx.fill();
     ctx.textAlign = "center"; ctx.fillStyle = "#bda77f"; ctx.font = "6px 'Courier New', monospace";
-    ctx.fillText("SKOR", W - 40, HUD_Y + 9);
+    ctx.fillText(tx("score"), W - 40, HUD_Y + 9);
     ctx.fillStyle = "#ffd23a"; ctx.font = "bold 13px 'Courier New', monospace";
     ctx.fillText(String(G.score).padStart(6, "0"), W - 40, HUD_Y + 18);
 
@@ -743,7 +796,7 @@
     ctx.fillStyle = "#fff"; ctx.fillText("DUCK", W / 2, 56);
     ctx.fillStyle = "#ffd23a"; ctx.fillText("HUNT", W / 2, 90);
     ctx.fillStyle = "#1f6f2f"; ctx.font = "8px 'Courier New', monospace";
-    ctx.fillText("klasik nişancı oyunu", W / 2, 110);
+    ctx.fillText(tx("tagline"), W / 2, 110);
 
     const dog = { x: 200, y: GRASS_Y - 4, mode: "walk", t: G.timer };
     drawDog(dog);
@@ -751,12 +804,12 @@
     drawDuck(fd);
 
     const blink = Math.floor(G.timer * 2) % 2 === 0;
-    drawChoice(W / 4, 164, "MOD A", "tek ördek", mouse.x < W / 2 && mouse.y > 150 && mouse.y < 178);
-    drawChoice(3 * W / 4, 164, "MOD B", "çift ördek", mouse.x >= W / 2 && mouse.y > 150 && mouse.y < 178);
+    drawChoice(W / 4, 164, tx("modeA"), tx("oneDuck"), mouse.x < W / 2 && mouse.y > 150 && mouse.y < 178);
+    drawChoice(3 * W / 4, 164, tx("modeB"), tx("twoDucks"), mouse.x >= W / 2 && mouse.y > 150 && mouse.y < 178);
 
     ctx.fillStyle = blink ? "#fff" : "#888";
     ctx.font = "8px 'Courier New', monospace"; ctx.textAlign = "center";
-    ctx.fillText("tıklayın ya da A / B tuşuna basın", W / 2, 192);
+    ctx.fillText(tx("clickOrAB"), W / 2, 192);
 
     drawHUDStaticMenu();
   }
@@ -775,7 +828,9 @@
     ctx.fillStyle = "#caa15a"; ctx.fillRect(0, HUD_Y, W, 2);
     ctx.fillStyle = "#9a8a6a"; ctx.font = "7px 'Courier New', monospace";
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText("S: ses " + (Sound.enabled ? "açık" : "kapalı") + "   ·   P: duraklat   ·   10/10 vurun = +10000 bonus", W / 2, HUD_Y + 20);
+    ctx.fillText((LANG === "en"
+      ? ("S: sound " + (Sound.enabled ? tx("on") : tx("off")) + " · P: pause · hit 10/10 = +10000 bonus")
+      : ("S: ses " + (Sound.enabled ? tx("on") : tx("off")) + "   ·   P: duraklat   ·   10/10 vurun = +10000 bonus")), W / 2, HUD_Y + 20);
   }
 
   function roundRect(x, y, w, h, r) {
@@ -818,7 +873,7 @@
 
     if (G.state === "INTRO" && G.timer < 1.4) {
       ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.font = "bold 12px 'Courier New', monospace";
-      ctx.fillText("TUR " + G.round, W / 2, 40);
+      ctx.fillText(tx("round") + " " + G.round, W / 2, 40);
     }
     if (G.state === "FLYING") {
       const tot = flyTime(G.round);
@@ -826,13 +881,14 @@
       ctx.fillStyle = "rgba(0,0,0,0.25)"; ctx.fillRect(10, 6, W - 20, 4);
       ctx.fillStyle = G.spawnTime < 1.5 ? "#ff3a3a" : "#ffd23a";
       ctx.fillRect(10, 6, w, 4);
-      if (G.paused) drawBanner("DURAKLATILDI", "#fff", "P ile devam edin");
+      if (G.paused) drawBanner(tx("paused"), "#fff", tx("resume"));
     }
     if (G.state === "SUMMARY") {
       const s = G.summary;
-      if (s.passed) drawBanner(s.bonus ? "MÜKEMMEL!" : "GEÇTİNİZ", "#5cff5c",
-        s.bonus ? ("10/10  +" + s.bonus + " bonus!") : (s.hits + " / " + s.need + " ördek"));
-      else drawBanner("TUR BAŞARISIZ", "#ff5c5c", s.hits + " / " + s.need + " ördek gerekliydi");
+      if (s.passed) drawBanner(s.bonus ? tx("perfect") : tx("passed"), "#5cff5c",
+        s.bonus ? ("10/10  +" + s.bonus + " bonus!") : (s.hits + " / " + s.need + " " + tx("ducks")));
+      else drawBanner(tx("roundFailed"), "#ff5c5c",
+        LANG === "en" ? ("needed " + s.hits + " / " + s.need + " " + tx("neededDucks")) : (s.hits + " / " + s.need + " " + tx("neededDucks") + " gerekliydi"));
     }
 
     drawHUD();
@@ -841,14 +897,14 @@
       ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(0, 0, W, H);
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
       ctx.fillStyle = "#ff5c5c"; ctx.font = "bold 22px 'Arial Black', Arial, sans-serif";
-      ctx.fillText("OYUN BİTTİ", W / 2, 80);
+      ctx.fillText(tx("gameOver"), W / 2, 80);
       ctx.fillStyle = "#fff"; ctx.font = "10px 'Courier New', monospace";
-      ctx.fillText("Ulaşılan tur: " + G.round, W / 2, 110);
+      ctx.fillText(tx("reachedRound") + G.round, W / 2, 110);
       ctx.fillStyle = "#ffd23a"; ctx.font = "bold 14px 'Courier New', monospace";
-      ctx.fillText("SKOR " + String(G.score).padStart(6, "0"), W / 2, 132);
+      ctx.fillText(tx("score") + " " + String(G.score).padStart(6, "0"), W / 2, 132);
       const blink = Math.floor(G.timer * 2) % 2 === 0;
       ctx.fillStyle = blink ? "#fff" : "#888"; ctx.font = "9px 'Courier New', monospace";
-      ctx.fillText("menü için tıklayın / Enter", W / 2, 158);
+      ctx.fillText(tx("menuClick"), W / 2, 158);
     }
 
     drawCrosshair();
@@ -897,6 +953,7 @@
   }
   requestAnimationFrame(loop);
 
+  applyDomTexts();
   toMenu();
 })();
 </script>
